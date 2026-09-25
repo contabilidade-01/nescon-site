@@ -1,0 +1,31 @@
+---
+import { escritorio, siteName } from "../config/site";
+
+interface Props {
+  titulo: string;
+  descricao: string;
+  imagem?: string;
+  tipo?: "website" | "article";
+  schema?: Record<string, unknown>[];
+  noindex?: boolean;
+}
+
+const { titulo, descricao, imagem = "/og-default.png", tipo = "website", schema = [], noindex = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname.replace(/\/$/, "") || "/", escritorio.url).href;
+const tituloCompleto = titulo.includes(siteName) ? titulo : `${titulo} | ${siteName}`;
+const imagemAbsoluta = new URL(imagem, escritorio.url).href;
+---
+
+<title>{tituloCompleto}</title>
+<meta name="description" content={descricao} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex, follow" />}
+<meta property="og:type" content={tipo} />
+<meta property="og:locale" content="pt_BR" />
+<meta property="og:site_name" content={siteName} />
+<meta property="og:title" content={tituloCompleto} />
+<meta property="og:description" content={descricao} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imagemAbsoluta} />
+<meta name="twitter:card" content="summary_large_image" />
+{schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}

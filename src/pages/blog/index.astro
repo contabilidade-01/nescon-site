@@ -1,0 +1,29 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import CtaFinal from "../../components/CtaFinal.astro";
+
+const artigos = (await getCollection("blog", (p) => !p.data.rascunho)).sort((a, b) => b.data.publicado.valueOf() - a.data.publicado.valueOf());
+const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
+---
+
+<Base titulo="Conteúdos sobre abertura de empresa, MEI e Simples Nacional" descricao="Guias práticos e diretos, escritos por contadores, sobre abertura de empresa, MEI, Simples Nacional e gestão do pequeno negócio.">
+  <section class="container-site py-14">
+    <p class="eyebrow">Conteúdos</p>
+    <h1 class="mt-3 text-4xl font-extrabold">Respostas diretas para quem empreende</h1>
+    <p class="mt-4 max-w-2xl text-lg text-slate-700">Guias escritos e revisados por contadores, sem juridiquês.</p>
+    <ul class="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {artigos.map((a) => (
+        <li>
+          <a href={`/blog/${a.id}`} class="cartao flex h-full flex-col hover:border-destaque-500">
+            <p class="text-xs font-semibold uppercase text-destaque-700">{a.data.categoria}</p>
+            <h2 class="mt-2 text-lg font-bold">{a.data.titulo}</h2>
+            <p class="mt-2 flex-1 text-sm text-slate-600">{a.data.descricao}</p>
+            <time datetime={a.data.publicado.toISOString()} class="mt-4 text-xs text-slate-500">{fmt.format(a.data.publicado)}</time>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+  <CtaFinal />
+</Base>

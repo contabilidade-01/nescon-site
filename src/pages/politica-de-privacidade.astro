@@ -1,0 +1,26 @@
+---
+import Base from "../layouts/Base.astro";
+import { escritorio } from "../config/site";
+---
+
+<Base titulo="Política de privacidade" descricao={`Como a ${escritorio.nome} coleta, usa e protege dados pessoais, conforme a LGPD.`}>
+  <article class="container-site prose prose-slate max-w-3xl py-14">
+    <h1>Política de privacidade</h1>
+    <p><em>Modelo inicial — revise com a assessoria jurídica antes da publicação.</em></p>
+    <p>A {escritorio.nome} trata dados pessoais conforme a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Esta política explica quais dados coletamos neste site e para quê.</p>
+    <h2>Quais dados coletamos</h2>
+    <ul>
+      <li><strong>Conversas no chat:</strong> as mensagens que você envia, para responder às suas dúvidas e encaminhar o atendimento à nossa equipe. As mensagens são processadas por um provedor de inteligência artificial contratado para essa finalidade.</li>
+      <li><strong>Dados de contato:</strong> nome, telefone, e-mail, cidade e informações sobre sua empresa que você decidir informar.</li>
+      <li><strong>Dados de navegação:</strong> somente se você aceitar os cookies de medição (Google Analytics), de forma agregada.</li>
+    </ul>
+    <h2>Para que usamos</h2>
+    <p>Para responder ao seu contato, preparar propostas de serviço e melhorar o site. Não vendemos dados pessoais.</p>
+    <h2>Por quanto tempo guardamos</h2>
+    <p>Pelo tempo necessário ao atendimento e ao cumprimento de obrigações legais e profissionais.</p>
+    <h2>Seus direitos</h2>
+    <p>Você pode pedir acesso, correção ou exclusão dos seus dados, ou revogar o consentimento, pelo e-mail <a href={`mailto:${escritorio.email}`}>{escritorio.email}</a>.</p>
+    <h2>Cookies</h2>
+    <p>Usamos cookies de medição apenas com o seu consentimento. Você pode mudar sua escolha em “Preferências de cookies”, no rodapé.</p>
+  </article>
+</Base>

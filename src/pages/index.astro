@@ -1,0 +1,127 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import CtaFinal from "../components/CtaFinal.astro";
+import { escritorio, whatsappLink, schemaEscritorio, schemaFaq } from "../config/site";
+
+const servicos = (await getCollection("servicos")).sort((a, b) => a.data.ordem - b.data.ordem);
+const artigos = (await getCollection("blog", (p) => !p.data.rascunho))
+  .sort((a, b) => b.data.publicado.valueOf() - a.data.publicado.valueOf())
+  .slice(0, 3);
+
+const faq = [
+  { pergunta: "Vocês atendem empresas de outras cidades?", resposta: `Sim. Atendemos presencialmente em ${escritorio.cidadesAtendidas.join(", ")} e de forma 100% online empresas de todo o Brasil.` },
+  { pergunta: "Como funciona o atendimento?", resposta: "Você fala direto com a equipe pelo WhatsApp e por reuniões online. Documentos são enviados digitalmente e as guias chegam com antecedência." },
+  { pergunta: "Vocês atendem MEI?", resposta: "Sim. Ajudamos na formalização, na declaração anual e, principalmente, na migração para Microempresa quando o negócio cresce." },
+  { pergunta: "Quanto custa?", resposta: "O valor depende do regime tributário, do volume de notas e de funcionários. Depois de uma conversa rápida enviamos uma proposta com o escopo detalhado." },
+];
+
+const passos = [
+  { titulo: "Conte o que você precisa", texto: "Pelo chat ou WhatsApp, em poucos minutos." },
+  { titulo: "Receba um diagnóstico", texto: "Um contador analisa o seu caso e indica o melhor caminho." },
+  { titulo: "Deixe a burocracia com a gente", texto: "Você acompanha tudo e foca no seu negócio." },
+];
+---
+
+<Base
+  titulo={`${escritorio.nome} | Contabilidade para abertura de empresas, MEI e Simples Nacional`}
+  descricao={escritorio.descricao}
+  schema={[schemaEscritorio(), schemaFaq(faq)]}
+>
+  <section class="bg-gradient-to-b from-marinho-50 to-areia">
+    <div class="container-site grid items-center gap-12 py-16 md:grid-cols-[1.2fr_1fr] md:py-24">
+      <div>
+        <p class="eyebrow">Contabilidade para pequenos negócios</p>
+        <h1 class="mt-4 text-4xl font-extrabold leading-tight sm:text-5xl">
+          Abra, organize e faça sua empresa crescer <span class="text-destaque-600">pagando só o imposto devido</span>
+        </h1>
+        <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-700">
+          Somos especialistas em abertura de empresas, MEI e Simples Nacional. Atendimento humano, direto com o contador, em {escritorio.endereco.cidade} e em todo o Brasil.
+        </p>
+        <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+          <button type="button" data-abrir-chat class="btn-primario text-lg">Fale com um contador</button>
+          <a href={whatsappLink()} target="_blank" rel="noopener" class="btn-secundario">Chamar no WhatsApp</a>
+        </div>
+        <p class="mt-4 text-sm text-slate-500">Resposta rápida em horário comercial · Sem compromisso</p>
+      </div>
+      <ul class="grid grid-cols-3 gap-3 md:grid-cols-1">
+        {escritorio.numeros.map((n) => (
+          <li class="cartao text-center md:text-left">
+            <p class="text-3xl font-extrabold text-marinho-800">{n.valor}</p>
+            <p class="mt-1 text-sm text-slate-600">{n.rotulo}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <section class="container-site mt-16" aria-labelledby="servicos-titulo">
+    <p class="eyebrow">Como podemos ajudar</p>
+    <h2 id="servicos-titulo" class="mt-2 text-3xl font-bold">Escolha o que você precisa agora</h2>
+    <ul class="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {servicos.map((s) => (
+        <li>
+          <a href={`/${s.id}`} class="cartao group flex h-full flex-col transition hover:-translate-y-0.5 hover:border-destaque-500 hover:shadow-md">
+            <h3 class="text-xl font-bold group-hover:text-destaque-700">{s.data.titulo}</h3>
+            <p class="mt-2 flex-1 text-slate-600">{s.data.subtitulo}</p>
+            <span class="mt-4 font-semibold text-destaque-700">Saiba mais →</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="container-site mt-20" aria-labelledby="como-titulo">
+    <p class="eyebrow">Como funciona</p>
+    <h2 id="como-titulo" class="mt-2 text-3xl font-bold">Simples, em 3 passos</h2>
+    <ol class="mt-8 grid gap-5 md:grid-cols-3">
+      {passos.map((p, i) => (
+        <li class="cartao">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-destaque-600 font-bold text-white">{i + 1}</span>
+          <h3 class="mt-4 text-lg font-bold">{p.titulo}</h3>
+          <p class="mt-1 text-slate-600">{p.texto}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <section class="container-site mt-20" aria-labelledby="quem-titulo">
+    <div class="cartao grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
+      <img src={escritorio.responsavel.foto} alt={`Foto de ${escritorio.responsavel.nome}`} width="160" height="160" class="h-40 w-40 rounded-full bg-marinho-50 object-cover" loading="lazy" />
+      <div>
+        <p class="eyebrow">Quem cuida da sua empresa</p>
+        <h2 id="quem-titulo" class="mt-2 text-2xl font-bold">{escritorio.responsavel.nome}</h2>
+        <p class="text-sm text-slate-500">{escritorio.responsavel.cargo} · {escritorio.responsavel.crc}</p>
+        <p class="mt-3 max-w-2xl text-slate-700">{escritorio.responsavel.bio}</p>
+        <a href="/sobre" class="mt-4 inline-block font-semibold text-destaque-700">Conheça o escritório →</a>
+      </div>
+    </div>
+  </section>
+
+  {artigos.length > 0 && (
+    <section class="container-site mt-20" aria-labelledby="blog-titulo">
+      <div class="flex items-end justify-between gap-4">
+        <div>
+          <p class="eyebrow">Conteúdos</p>
+          <h2 id="blog-titulo" class="mt-2 text-3xl font-bold">Tire suas dúvidas</h2>
+        </div>
+        <a href="/blog" class="font-semibold text-destaque-700">Ver todos →</a>
+      </div>
+      <ul class="mt-8 grid gap-5 md:grid-cols-3">
+        {artigos.map((a) => (
+          <li>
+            <a href={`/blog/${a.id}`} class="cartao block h-full hover:border-destaque-500">
+              <p class="text-xs font-semibold uppercase text-destaque-700">{a.data.categoria}</p>
+              <h3 class="mt-2 text-lg font-bold">{a.data.titulo}</h3>
+              <p class="mt-2 line-clamp-3 text-sm text-slate-600">{a.data.descricao}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+
+  <Faq itens={faq} />
+  <CtaFinal />
+</Base>

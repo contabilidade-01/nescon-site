@@ -1,0 +1,45 @@
+{
+  "nome": "Nescon Contabilidade",
+  "slogan": "Contabilidade para quem está abrindo ou fazendo a empresa crescer",
+  "descricao": "Escritório de contabilidade especializado em abertura de empresas, MEI e empresas do Simples Nacional. Atendimento presencial na região e 100% online para todo o Brasil.",
+  "url": "https://www.nescon.com.br",
+  "whatsapp": "5500000000000",
+  "telefone": "(00) 0000-0000",
+  "email": "contato@nescon.com.br",
+  "endereco": {
+    "rua": "Rua Exemplo, 123 - Sala 1",
+    "bairro": "Centro",
+    "cidade": "Sua Cidade",
+    "uf": "UF",
+    "cep": "00000-000"
+  },
+  "geo": { "lat": 0, "lng": 0 },
+  "cidadesAtendidas": ["Sua Cidade"],
+  "horario": {
+    "diasUteis": "Segunda a sexta",
+    "abre": "08:00",
+    "fecha": "18:00"
+  },
+  "fundacao": 2015,
+  "numeros": [
+    { "valor": "10+", "rotulo": "anos de experiência" },
+    { "valor": "300+", "rotulo": "empresas abertas" },
+    { "valor": "100%", "rotulo": "atendimento humano" }
+  ],
+  "responsavel": {
+    "nome": "Nome do Contador",
+    "cargo": "Contador responsável",
+    "crc": "CRC-UF 000000/O-0",
+    "bio": "Contador com experiência em abertura de empresas e planejamento tributário para pequenos negócios.",
+    "foto": "/img/equipe/responsavel.svg",
+    "linkedin": ""
+  },
+  "redes": {
+    "instagram": "",
+    "linkedin": "",
+    "googleMeuNegocio": ""
+  },
+  "analytics": {
+    "ga4": ""
+  }
+}

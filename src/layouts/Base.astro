@@ -1,0 +1,40 @@
+---
+import "../styles/global.css";
+import Seo from "../components/Seo.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import ChatWidget from "../components/ChatWidget.astro";
+import CookieConsent from "../components/CookieConsent.astro";
+
+import type { ComponentProps } from "astro/types";
+type Props = ComponentProps<typeof Seo>;
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10284e" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="alternate" type="text/plain" href="/llms.txt" title="Resumo para assistentes de IA" />
+    <Seo {...props} />
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <a href="#conteudo" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:p-3">Pular para o conteúdo</a>
+    <Header />
+    <main id="conteudo" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+    <ChatWidget />
+    <CookieConsent />
+    <!-- Formulário oculto para a Netlify detectar e guardar os leads do chat -->
+    <form name="lead-chat" data-netlify="true" netlify-honeypot="bot" hidden>
+      <input name="bot" /><input name="nome" /><input name="contato" /><input name="necessidade" /><input name="cidade" />
+      <input name="faturamento" /><input name="empresaExistente" /><input name="resumo" /><input name="pagina" />
+    </form>
+  </body>
+</html>

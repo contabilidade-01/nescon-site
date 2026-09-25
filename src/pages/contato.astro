@@ -1,0 +1,28 @@
+---
+import Base from "../layouts/Base.astro";
+import { escritorio, enderecoCompleto, whatsappLink, schemaEscritorio } from "../config/site";
+---
+
+<Base titulo="Contato" descricao={`Fale com a ${escritorio.nome} pelo WhatsApp, telefone ou e-mail. Atendimento ${escritorio.horario.diasUteis.toLowerCase()}, das ${escritorio.horario.abre} às ${escritorio.horario.fecha}.`} schema={[schemaEscritorio()]}>
+  <section class="container-site max-w-3xl py-14">
+    <p class="eyebrow">Contato</p>
+    <h1 class="mt-3 text-4xl font-extrabold">Fale com a nossa equipe</h1>
+    <p class="mt-4 text-lg text-slate-700">O jeito mais rápido é pelo chat ou pelo WhatsApp. Um contador responde em horário comercial.</p>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <button type="button" data-abrir-chat class="cartao text-left hover:border-destaque-500">
+        <p class="font-bold text-marinho-900">Chat no site</p>
+        <p class="mt-1 text-sm text-slate-600">Tire dúvidas agora e fale com a equipe.</p>
+      </button>
+      <a href={whatsappLink()} target="_blank" rel="noopener" class="cartao hover:border-destaque-500">
+        <p class="font-bold text-marinho-900">WhatsApp</p>
+        <p class="mt-1 text-sm text-slate-600">Converse direto com um contador.</p>
+      </a>
+    </div>
+    <dl class="cartao mt-8 grid gap-4 sm:grid-cols-2">
+      <div><dt class="text-sm text-slate-500">Telefone</dt><dd><a href={`tel:${escritorio.telefone.replace(/\D/g, "")}`} class="font-semibold">{escritorio.telefone}</a></dd></div>
+      <div><dt class="text-sm text-slate-500">E-mail</dt><dd><a href={`mailto:${escritorio.email}`} class="font-semibold">{escritorio.email}</a></dd></div>
+      <div><dt class="text-sm text-slate-500">Endereço</dt><dd class="font-semibold">{enderecoCompleto()}</dd></div>
+      <div><dt class="text-sm text-slate-500">Horário</dt><dd class="font-semibold">{escritorio.horario.diasUteis}, {escritorio.horario.abre}–{escritorio.horario.fecha}</dd></div>
+    </dl>
+  </section>
+</Base>

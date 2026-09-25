@@ -1,0 +1,85 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import CtaFinal from "../components/CtaFinal.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import { escritorio, whatsappLink, schemaFaq, schemaBreadcrumb } from "../config/site";
+
+export async function getStaticPaths() {
+  const servicos = await getCollection("servicos");
+  return servicos.map((s) => ({ params: { servico: s.id }, props: { servico: s } }));
+}
+
+const { servico } = Astro.props;
+const d = servico.data;
+const { Content } = await render(servico);
+const artigos = await getCollection("blog", (p) => !p.data.rascunho && p.data.servico === servico.id);
+const trilha = [{ nome: "Início", url: "/" }, { nome: d.titulo, url: `/${servico.id}` }];
+
+const schemaServico = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: d.titulo,
+  description: d.descricao,
+  serviceType: d.titulo,
+  provider: { "@id": `${escritorio.url}/#escritorio` },
+  areaServed: { "@type": "Country", name: "Brasil" },
+};
+---
+
+<Base titulo={d.tituloSeo} descricao={d.descricao} schema={[schemaServico, schemaFaq(d.faq), schemaBreadcrumb(trilha)]}>
+  <Breadcrumbs itens={trilha} />
+  <section class="container-site grid gap-10 py-12 md:grid-cols-[1.3fr_1fr] md:items-center">
+    <div>
+      <p class="eyebrow">{d.titulo}</p>
+      <h1 class="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl">{d.chamada}</h1>
+      <p class="mt-5 text-lg text-slate-700">{d.subtitulo}</p>
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <button type="button" data-abrir-chat class="btn-primario">Fale com um contador</button>
+        <a href={whatsappLink(`Olá! Vim pelo site e tenho interesse em: ${d.titulo}.`)} target="_blank" rel="noopener" class="btn-secundario">Chamar no WhatsApp</a>
+      </div>
+      {d.precoAPartirDe && <p class="mt-4 text-sm text-slate-600">A partir de <strong>{d.precoAPartirDe}</strong></p>}
+    </div>
+    <ul class="space-y-3">
+      {d.beneficios.map((b) => (
+        <li class="cartao flex gap-3">
+          <span class="mt-1 text-destaque-600" aria-hidden="true">✔</span>
+          <div>
+            <h2 class="font-bold">{b.titulo}</h2>
+            <p class="text-sm text-slate-600">{b.texto}</p>
+          </div>
+        </li>
+      ))}
+    </ul>
+  </section>
+
+  <section class="container-site mt-8" aria-labelledby="passos-titulo">
+    <h2 id="passos-titulo" class="text-3xl font-bold">Como funciona</h2>
+    <ol class="mt-8 grid gap-5 md:grid-cols-3">
+      {d.passos.map((p, i) => (
+        <li class="cartao">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-marinho-800 font-bold text-white">{i + 1}</span>
+          <h3 class="mt-4 text-lg font-bold">{p.titulo}</h3>
+          <p class="mt-1 text-slate-600">{p.texto}</p>
+        </li>
+      ))}
+    </ol>
+  </section>
+
+  <article class="container-site prose prose-slate prose-headings:text-marinho-900 mt-16 max-w-3xl">
+    <Content />
+  </article>
+
+  {artigos.length > 0 && (
+    <section class="container-site mt-16">
+      <h2 class="text-2xl font-bold">Leia também</h2>
+      <ul class="mt-4 space-y-2">
+        {artigos.map((a) => <li><a href={`/blog/${a.id}`} class="font-semibold text-destaque-700 hover:underline">{a.data.titulo}</a></li>)}
+      </ul>
+    </section>
+  )}
+
+  <Faq itens={d.faq} />
+  <CtaFinal titulo={`Vamos falar sobre ${d.titulo.toLowerCase()}?`} />
+</Base>

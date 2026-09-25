@@ -1,0 +1,43 @@
+---
+import Base from "../layouts/Base.astro";
+import CtaFinal from "../components/CtaFinal.astro";
+import { escritorio, schemaEscritorio } from "../config/site";
+const r = escritorio.responsavel;
+const schemaPessoa = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: r.nome,
+  jobTitle: r.cargo,
+  identifier: r.crc,
+  description: r.bio,
+  worksFor: { "@id": `${escritorio.url}/#escritorio` },
+  ...(r.linkedin ? { sameAs: [r.linkedin] } : {}),
+};
+---
+
+<Base titulo={`Sobre a ${escritorio.nome}`} descricao={`Conheça a ${escritorio.nome}: escritório de contabilidade desde ${escritorio.fundacao}, com atendimento humano e especialização em pequenos negócios.`} schema={[schemaEscritorio(), schemaPessoa]}>
+  <section class="container-site max-w-3xl py-14">
+    <p class="eyebrow">Sobre nós</p>
+    <h1 class="mt-3 text-4xl font-extrabold">Contabilidade próxima, feita por gente</h1>
+    <p class="mt-6 text-lg leading-relaxed text-slate-700">{escritorio.descricao}</p>
+    <p class="mt-4 leading-relaxed text-slate-700">
+      Desde {escritorio.fundacao} ajudamos empreendedores a abrir empresas, sair da informalidade e crescer com os impostos em ordem. Acreditamos que o cliente precisa entender o que paga e falar com quem cuida da sua empresa.
+    </p>
+
+    <ul class="mt-10 grid grid-cols-3 gap-4">
+      {escritorio.numeros.map((n) => <li class="cartao text-center"><p class="text-3xl font-extrabold text-marinho-800">{n.valor}</p><p class="mt-1 text-sm text-slate-600">{n.rotulo}</p></li>)}
+    </ul>
+
+    <h2 class="mt-14 text-2xl font-bold">Responsável técnico</h2>
+    <div class="cartao mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
+      <img src={r.foto} alt={`Foto de ${r.nome}`} width="140" height="140" class="h-36 w-36 rounded-full bg-marinho-50 object-cover" />
+      <div>
+        <p class="text-xl font-bold text-marinho-900">{r.nome}</p>
+        <p class="text-sm text-slate-500">{r.cargo} · {r.crc}</p>
+        <p class="mt-3 text-slate-700">{r.bio}</p>
+        {r.linkedin && <a href={r.linkedin} target="_blank" rel="noopener" class="mt-3 inline-block font-semibold text-destaque-700">LinkedIn →</a>}
+      </div>
+    </div>
+  </section>
+  <CtaFinal />
+</Base>

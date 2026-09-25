@@ -1,0 +1,145 @@
+# Painel de edição (Decap CMS). Login via Netlify Identity + Git Gateway.
+backend:
+  name: git-gateway
+  branch: main
+# Para testar localmente: rode "npm run cms" em outro terminal e acesse /admin
+local_backend: true
+locale: pt
+publish_mode: editorial_workflow
+media_folder: public/img/uploads
+public_folder: /img/uploads
+
+collections:
+  - name: blog
+    label: Artigos do blog
+    label_singular: Artigo
+    folder: src/content/blog
+    create: true
+    slug: "{{slug}}"
+    summary: "{{titulo}} ({{categoria}})"
+    fields:
+      - { label: Título (pergunta que o cliente pesquisa), name: titulo, widget: string }
+      - { label: Descrição para o Google (até 170 caracteres), name: descricao, widget: text, pattern: ['^.{0,170}$', "Máximo de 170 caracteres"] }
+      - { label: "Resposta rápida (2 a 3 frases que respondem a pergunta direto — é o que as IAs citam)", name: resumo, widget: text }
+      - { label: Publicado em, name: publicado, widget: datetime, format: "YYYY-MM-DD", date_format: "DD/MM/YYYY", time_format: false }
+      - { label: Atualizado em, name: atualizado, widget: datetime, format: "YYYY-MM-DD", date_format: "DD/MM/YYYY", time_format: false, required: false }
+      - { label: Categoria, name: categoria, widget: select, options: ["Abertura de empresa", "MEI", "Simples Nacional", "Gestão", "Impostos"] }
+      - { label: Serviço relacionado (chamada no fim do artigo), name: servico, widget: relation, collection: servicos, value_field: "{{slug}}", search_fields: [titulo], display_fields: [titulo], required: false }
+      - label: Perguntas frequentes
+        name: faq
+        widget: list
+        required: false
+        fields:
+          - { label: Pergunta, name: pergunta, widget: string }
+          - { label: Resposta, name: resposta, widget: text }
+      - { label: Rascunho (não publicar), name: rascunho, widget: boolean, default: false }
+      - { label: Texto (use subtítulos em forma de pergunta), name: body, widget: markdown }
+
+  - name: servicos
+    label: Páginas de serviço
+    label_singular: Serviço
+    folder: src/content/servicos
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: Nome do serviço, name: titulo, widget: string }
+      - { label: Título para o Google, name: tituloSeo, widget: string }
+      - { label: Descrição para o Google (até 170 caracteres), name: descricao, widget: text }
+      - { label: Chamada principal (H1), name: chamada, widget: string }
+      - { label: Subtítulo, name: subtitulo, widget: text }
+      - { label: Ordem no menu, name: ordem, widget: number, value_type: int, default: 10 }
+      - { label: Preço "a partir de" (opcional), name: precoAPartirDe, widget: string, required: false }
+      - label: Benefícios
+        name: beneficios
+        widget: list
+        fields: [{ label: Título, name: titulo, widget: string }, { label: Texto, name: texto, widget: text }]
+      - label: Passos
+        name: passos
+        widget: list
+        fields: [{ label: Título, name: titulo, widget: string }, { label: Texto, name: texto, widget: text }]
+      - label: Perguntas frequentes
+        name: faq
+        widget: list
+        fields: [{ label: Pergunta, name: pergunta, widget: string }, { label: Resposta, name: resposta, widget: text }]
+      - { label: Texto, name: body, widget: markdown }
+
+  - name: cidades
+    label: Cidades atendidas
+    label_singular: Cidade
+    folder: src/content/cidades
+    create: true
+    slug: "{{slug}}"
+    summary: "{{cidade}} - {{uf}}"
+    identifier_field: cidade
+    fields:
+      - { label: Cidade, name: cidade, widget: string, hint: "O endereço da página será /contabilidade-em-nome-da-cidade" }
+      - { label: UF, name: uf, widget: string, pattern: ['^[A-Z]{2}$', "Use a sigla com 2 letras maiúsculas"] }
+      - { label: Descrição para o Google (até 170 caracteres), name: descricao, widget: text }
+      - { label: Atendimento presencial nesta cidade?, name: presencial, widget: boolean, default: false }
+      - { label: Bairros atendidos, name: bairros, widget: list, required: false }
+      - label: Perguntas frequentes
+        name: faq
+        widget: list
+        required: false
+        fields: [{ label: Pergunta, name: pergunta, widget: string }, { label: Resposta, name: resposta, widget: text }]
+      - { label: Rascunho (não publicar), name: rascunho, widget: boolean, default: false }
+      - { label: "Texto (fale da economia local, atividades comuns na cidade e como vocês atendem)", name: body, widget: markdown }
+
+  - name: configuracoes
+    label: Dados do escritório
+    files:
+      - name: escritorio
+        label: Escritório
+        file: src/data/escritorio.json
+        fields:
+          - { label: Nome, name: nome, widget: string }
+          - { label: Slogan, name: slogan, widget: string }
+          - { label: Descrição, name: descricao, widget: text }
+          - { label: Endereço do site, name: url, widget: string }
+          - { label: "WhatsApp (só números, com 55 e DDD)", name: whatsapp, widget: string, pattern: ['^55\d{10,11}$', "Ex.: 5511999999999"] }
+          - { label: Telefone, name: telefone, widget: string }
+          - { label: E-mail, name: email, widget: string }
+          - label: Endereço
+            name: endereco
+            widget: object
+            fields:
+              - { label: Rua e número, name: rua, widget: string }
+              - { label: Bairro, name: bairro, widget: string }
+              - { label: Cidade, name: cidade, widget: string }
+              - { label: UF, name: uf, widget: string }
+              - { label: CEP, name: cep, widget: string }
+          - label: Coordenadas (Google Maps)
+            name: geo
+            widget: object
+            fields: [{ label: Latitude, name: lat, widget: number, value_type: float }, { label: Longitude, name: lng, widget: number, value_type: float }]
+          - { label: Cidades com atendimento presencial, name: cidadesAtendidas, widget: list }
+          - label: Horário
+            name: horario
+            widget: object
+            fields: [{ label: Dias, name: diasUteis, widget: string }, { label: Abre, name: abre, widget: string }, { label: Fecha, name: fecha, widget: string }]
+          - { label: Ano de fundação, name: fundacao, widget: number, value_type: int }
+          - label: Números (prova social — use só números reais)
+            name: numeros
+            widget: list
+            fields: [{ label: Valor, name: valor, widget: string }, { label: Rótulo, name: rotulo, widget: string }]
+          - label: Responsável técnico
+            name: responsavel
+            widget: object
+            fields:
+              - { label: Nome, name: nome, widget: string }
+              - { label: Cargo, name: cargo, widget: string }
+              - { label: CRC, name: crc, widget: string }
+              - { label: Minibiografia, name: bio, widget: text }
+              - { label: Foto, name: foto, widget: image }
+              - { label: LinkedIn, name: linkedin, widget: string, required: false }
+          - label: Redes
+            name: redes
+            widget: object
+            fields:
+              - { label: Instagram, name: instagram, widget: string, required: false }
+              - { label: LinkedIn, name: linkedin, widget: string, required: false }
+              - { label: Google Meu Negócio, name: googleMeuNegocio, widget: string, required: false }
+          - label: Analytics
+            name: analytics
+            widget: object
+            fields: [{ label: "ID do Google Analytics 4 (G-XXXX)", name: ga4, widget: string, required: false }]

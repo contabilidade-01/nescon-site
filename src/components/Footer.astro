@@ -1,0 +1,45 @@
+---
+import { escritorio, enderecoCompleto, whatsappLink } from "../config/site";
+import { getCollection } from "astro:content";
+
+const servicos = (await getCollection("servicos")).sort((a, b) => a.data.ordem - b.data.ordem);
+const cidades = await getCollection("cidades", (c) => !c.data.rascunho);
+const ano = new Date().getFullYear();
+---
+
+<footer class="mt-24 bg-marinho-900 text-marinho-100">
+  <div class="container-site grid gap-10 py-14 md:grid-cols-4">
+    <div class="md:col-span-2">
+      <p class="text-lg font-bold text-white">{escritorio.nome}</p>
+      <p class="mt-3 max-w-md text-sm leading-relaxed">{escritorio.descricao}</p>
+      <address class="mt-5 text-sm not-italic leading-relaxed">
+        {enderecoCompleto()}<br />
+        <a href={`tel:${escritorio.telefone.replace(/\D/g, "")}`} class="hover:text-white">{escritorio.telefone}</a> ·
+        <a href={`mailto:${escritorio.email}`} class="hover:text-white">{escritorio.email}</a><br />
+        {escritorio.horario.diasUteis}, das {escritorio.horario.abre} às {escritorio.horario.fecha}
+      </address>
+    </div>
+    <div>
+      <p class="font-semibold text-white">Serviços</p>
+      <ul class="mt-3 space-y-2 text-sm">
+        {servicos.map((s) => <li><a href={`/${s.id}`} class="hover:text-white">{s.data.titulo}</a></li>)}
+      </ul>
+    </div>
+    <div>
+      <p class="font-semibold text-white">Escritório</p>
+      <ul class="mt-3 space-y-2 text-sm">
+        <li><a href="/sobre" class="hover:text-white">Sobre nós</a></li>
+        <li><a href="/blog" class="hover:text-white">Conteúdos</a></li>
+        <li><a href="/contato" class="hover:text-white">Contato</a></li>
+        {cidades.map((c) => <li><a href={`/contabilidade-em-${c.id}`} class="hover:text-white">Contabilidade em {c.data.cidade}</a></li>)}
+        <li><a href={whatsappLink()} class="hover:text-white" rel="noopener" target="_blank">WhatsApp</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="border-t border-white/10">
+    <div class="container-site flex flex-col gap-2 py-6 text-xs text-marinho-100/80 sm:flex-row sm:justify-between">
+      <p>© {ano} {escritorio.nome} · {escritorio.responsavel.cargo}: {escritorio.responsavel.nome} · {escritorio.responsavel.crc}</p>
+      <p><a href="/politica-de-privacidade" class="hover:text-white">Política de privacidade</a> · <button type="button" data-preferencias-cookies class="hover:text-white">Preferências de cookies</button></p>
+    </div>
+  </div>
+</footer>

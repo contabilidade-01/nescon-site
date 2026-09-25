@@ -1,0 +1,81 @@
+---
+import { getCollection, getEntry, render } from "astro:content";
+import Base from "../../layouts/Base.astro";
+import Faq from "../../components/Faq.astro";
+import CtaFinal from "../../components/CtaFinal.astro";
+import Breadcrumbs from "../../components/Breadcrumbs.astro";
+import { escritorio, schemaFaq, schemaBreadcrumb } from "../../config/site";
+
+export async function getStaticPaths() {
+  const artigos = await getCollection("blog", (p) => !p.data.rascunho);
+  return artigos.map((a) => ({ params: { slug: a.id }, props: { artigo: a } }));
+}
+
+const { artigo } = Astro.props;
+const d = artigo.data;
+const { Content, headings } = await render(artigo);
+const servico = d.servico ? await getEntry("servicos", d.servico) : undefined;
+const url = `/blog/${artigo.id}`;
+const atualizado = d.atualizado ?? d.publicado;
+const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long" });
+const r = escritorio.responsavel;
+const trilha = [{ nome: "Início", url: "/" }, { nome: "Conteúdos", url: "/blog" }, { nome: d.titulo, url }];
+
+const schemaArtigo = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: d.titulo,
+  description: d.descricao,
+  abstract: d.resumo,
+  datePublished: d.publicado.toISOString(),
+  dateModified: atualizado.toISOString(),
+  inLanguage: "pt-BR",
+  mainEntityOfPage: new URL(url, escritorio.url).href,
+  author: { "@type": "Person", name: r.nome, jobTitle: r.cargo, identifier: r.crc, url: `${escritorio.url}/sobre` },
+  publisher: { "@id": `${escritorio.url}/#escritorio` },
+};
+const indice = headings.filter((h) => h.depth === 2);
+---
+
+<Base titulo={d.titulo} descricao={d.descricao} tipo="article" schema={[schemaArtigo, schemaFaq(d.faq), schemaBreadcrumb(trilha)]}>
+  <Breadcrumbs itens={trilha} />
+  <article class="container-site max-w-3xl py-10">
+    <p class="eyebrow">{d.categoria}</p>
+    <h1 class="mt-3 text-4xl font-extrabold leading-tight">{d.titulo}</h1>
+    <p class="mt-4 text-sm text-slate-600">
+      Por <a href="/sobre" class="font-semibold text-marinho-800 hover:underline">{r.nome}</a>, {r.cargo} ({r.crc}) ·
+      Atualizado em <time datetime={atualizado.toISOString()}>{fmt.format(atualizado)}</time>
+    </p>
+
+    <aside class="mt-8 rounded-2xl border-l-4 border-destaque-600 bg-white p-5 shadow-sm" aria-label="Resposta rápida">
+      <p class="text-sm font-bold uppercase tracking-wide text-destaque-700">Resposta rápida</p>
+      <p class="mt-2 text-lg leading-relaxed text-slate-800">{d.resumo}</p>
+    </aside>
+
+    {indice.length > 2 && (
+      <nav aria-label="Neste artigo" class="mt-8 rounded-2xl bg-marinho-50 p-5">
+        <p class="font-semibold text-marinho-900">Neste artigo</p>
+        <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm">
+          {indice.map((h) => <li><a href={`#${h.slug}`} class="text-marinho-700 hover:underline">{h.text}</a></li>)}
+        </ol>
+      </nav>
+    )}
+
+    <div class="prose prose-slate prose-headings:text-marinho-900 prose-a:text-destaque-700 prose-table:text-sm mt-8 max-w-none">
+      <Content />
+    </div>
+
+    {servico && (
+      <div class="mt-12 rounded-2xl bg-marinho-800 p-6 text-white">
+        <p class="text-lg font-bold">{servico.data.chamada}</p>
+        <p class="mt-2 text-marinho-100">{servico.data.subtitulo}</p>
+        <div class="mt-5 flex flex-col gap-3 sm:flex-row">
+          <button type="button" data-abrir-chat class="btn-primario">Fale com um contador</button>
+          <a href={`/${servico.id}`} class="btn-claro">Conheça o serviço</a>
+        </div>
+      </div>
+    )}
+  </article>
+  <Faq itens={d.faq} />
+  <CtaFinal />
+</Base>

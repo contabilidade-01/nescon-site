@@ -1,0 +1,77 @@
+---
+import { escritorio } from "../config/site";
+const ga4 = escritorio.analytics.ga4;
+---
+
+<div id="cookies" hidden class="fixed inset-x-4 bottom-20 z-50 mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:bottom-6 print:hidden">
+  <p class="text-sm text-slate-700">
+    Usamos cookies de medição para entender como o site é usado e melhorar o atendimento. Você pode aceitar ou recusar a qualquer momento.
+    <a href="/politica-de-privacidade" class="underline">Saiba mais</a>.
+  </p>
+  <div class="mt-4 flex gap-3">
+    <button type="button" data-cookies="aceito" class="btn-primario px-5 py-2 text-sm">Aceitar</button>
+    <button type="button" data-cookies="recusado" class="btn-secundario px-5 py-2 text-sm">Recusar</button>
+  </div>
+</div>
+
+<script define:vars={{ ga4 }}>
+  const aviso = document.getElementById("cookies");
+  const CHAVE = "nescon-cookies";
+  const ler = () => {
+    try {
+      return localStorage.getItem(CHAVE);
+    } catch {
+      return null;
+    }
+  };
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    window.dataLayer.push(arguments);
+  }
+  window.gtag = gtag;
+
+  let carregado = false;
+  function carregarAnalytics() {
+    if (!ga4 || carregado) return;
+    carregado = true;
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = `https://www.googletagmanager.com/gtag/js?id=${ga4}`;
+    document.head.appendChild(s);
+    gtag("js", new Date());
+    gtag("config", ga4, { anonymize_ip: true });
+  }
+
+  /** Eventos de conversão: só vão para o GA4 com consentimento. */
+  window.nesconEvento = (nome, params = {}) => {
+    if (ler() === "aceito" && ga4) gtag("event", nome, params);
+  };
+
+  function decidir(valor) {
+    try {
+      localStorage.setItem(CHAVE, valor);
+    } catch {
+      /* sem armazenamento: vale só para esta página */
+    }
+    aviso.hidden = true;
+    if (valor === "aceito") carregarAnalytics();
+  }
+
+  const escolha = ler();
+  if (escolha === "aceito") carregarAnalytics();
+  else if (!escolha && ga4) aviso.hidden = false;
+
+  document.addEventListener("click", (e) => {
+    const alvo = e.target instanceof Element ? e.target : null;
+    const botao = alvo?.closest("[data-cookies]");
+    if (botao) decidir(botao.dataset.cookies);
+    if (alvo?.closest("[data-preferencias-cookies]")) aviso.hidden = false;
+  });
+
+  // Cliques em links de WhatsApp fora do chat também contam como conversão
+  document.addEventListener("click", (e) => {
+    const link = e.target instanceof Element ? e.target.closest('a[href^="https://wa.me/"]') : null;
+    if (link && !link.closest("#chat")) window.nesconEvento("whatsapp_clique", { origem: location.pathname });
+  });
+</script>

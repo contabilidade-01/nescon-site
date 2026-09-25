@@ -1,0 +1,74 @@
+---
+import { getCollection, render } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Faq from "../components/Faq.astro";
+import CtaFinal from "../components/CtaFinal.astro";
+import Breadcrumbs from "../components/Breadcrumbs.astro";
+import { escritorio, enderecoCompleto, whatsappLink, schemaEscritorio, schemaFaq, schemaBreadcrumb } from "../config/site";
+
+export async function getStaticPaths() {
+  const cidades = await getCollection("cidades", (c) => !c.data.rascunho);
+  return cidades.map((c) => ({ params: { cidade: c.id }, props: { cidade: c } }));
+}
+
+const { cidade } = Astro.props;
+const d = cidade.data;
+const { Content } = await render(cidade);
+const servicos = (await getCollection("servicos")).sort((a, b) => a.data.ordem - b.data.ordem);
+const url = `/contabilidade-em-${cidade.id}`;
+const trilha = [{ nome: "Início", url: "/" }, { nome: `Contabilidade em ${d.cidade}`, url }];
+const faq = [
+  ...d.faq,
+  {
+    pergunta: `Vocês têm escritório em ${d.cidade}?`,
+    resposta: d.presencial
+      ? `Sim. Nosso escritório fica em ${enderecoCompleto()}, e também atendemos online.`
+      : `Atendemos empresas de ${d.cidade} de forma 100% online, com reuniões por vídeo e atendimento pelo WhatsApp.`,
+  },
+];
+---
+
+<Base
+  titulo={`Contabilidade em ${d.cidade} - ${d.uf}`}
+  descricao={d.descricao}
+  schema={[schemaEscritorio({ areaServed: { "@type": "City", name: d.cidade } }), schemaFaq(faq), schemaBreadcrumb(trilha)]}
+>
+  <Breadcrumbs itens={trilha} />
+  <section class="container-site py-12">
+    <p class="eyebrow">{d.presencial ? "Atendimento presencial e online" : "Atendimento 100% online"}</p>
+    <h1 class="mt-3 max-w-3xl text-4xl font-extrabold leading-tight sm:text-5xl">Contabilidade em {d.cidade} para abrir e fazer sua empresa crescer</h1>
+    <p class="mt-5 max-w-2xl text-lg text-slate-700">{d.descricao}</p>
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <button type="button" data-abrir-chat class="btn-primario">Fale com um contador</button>
+      <a href={whatsappLink(`Olá! Tenho uma empresa em ${d.cidade} e gostaria de falar com um contador.`)} target="_blank" rel="noopener" class="btn-secundario">Chamar no WhatsApp</a>
+    </div>
+  </section>
+
+  <section class="container-site" aria-labelledby="servicos-cidade">
+    <h2 id="servicos-cidade" class="text-2xl font-bold">Serviços para empresas de {d.cidade}</h2>
+    <ul class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {servicos.map((s) => (
+        <li><a href={`/${s.id}`} class="cartao block h-full hover:border-destaque-500"><h3 class="font-bold">{s.data.titulo}</h3><p class="mt-1 text-sm text-slate-600">{s.data.subtitulo}</p></a></li>
+      ))}
+    </ul>
+  </section>
+
+  <article class="container-site prose prose-slate mt-12 max-w-3xl"><Content /></article>
+
+  {d.bairros.length > 0 && (
+    <section class="container-site mt-10">
+      <h2 class="text-xl font-bold">Bairros atendidos</h2>
+      <p class="mt-2 text-slate-700">{d.bairros.join(" · ")}</p>
+    </section>
+  )}
+
+  {d.presencial && (
+    <section class="container-site mt-10">
+      <h2 class="text-xl font-bold">Onde estamos</h2>
+      <address class="mt-2 not-italic text-slate-700">{enderecoCompleto()} · {escritorio.horario.diasUteis}, {escritorio.horario.abre}–{escritorio.horario.fecha}</address>
+    </section>
+  )}
+
+  <Faq itens={faq} />
+  <CtaFinal />
+</Base>
