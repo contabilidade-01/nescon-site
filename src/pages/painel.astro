@@ -1,0 +1,260 @@
+---
+import "../styles/global.css";
+import { escritorio } from "../config/site";
+import { TRILHAS } from "../config/qualificacao";
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Painel de leads | {escritorio.nome}</title>
+  </head>
+  <body class="min-h-screen">
+    <header class="bg-marinho-900 text-white">
+      <div class="container-site flex h-14 items-center justify-between">
+        <p class="font-bold">Painel de leads · {escritorio.nome}</p>
+        <button id="sair" hidden class="text-sm underline">Sair</button>
+      </div>
+    </header>
+
+    <main class="container-site py-8">
+      <form id="login" class="cartao mx-auto max-w-sm">
+        <h1 class="text-xl font-bold">Entrar no painel</h1>
+        <label for="senha" class="mt-4 block text-sm text-slate-600">Senha</label>
+        <input id="senha" type="password" required autocomplete="current-password" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2" />
+        <p id="login-erro" class="mt-2 min-h-5 text-sm text-red-700" role="alert"></p>
+        <button class="btn-primario mt-2 w-full">Entrar</button>
+      </form>
+
+      <section id="app" hidden>
+        <div class="flex flex-wrap items-end gap-3">
+          <ul id="contadores" class="flex flex-wrap gap-3"></ul>
+          <div class="ml-auto flex flex-wrap gap-2 text-sm">
+            <select id="f-status" class="rounded-lg border border-slate-300 bg-white px-3 py-2" aria-label="Filtrar por situação">
+              <option value="">Todas as situações</option>
+              <option value="completo">Concluídos</option>
+              <option value="em_andamento">Em andamento / abandonados</option>
+            </select>
+            <select id="f-trilha" class="rounded-lg border border-slate-300 bg-white px-3 py-2" aria-label="Filtrar por assunto">
+              <option value="">Todos os assuntos</option>
+              {TRILHAS.map((t) => <option value={t.id}>{t.rotulo}</option>)}
+            </select>
+            <select id="f-classe" class="rounded-lg border border-slate-300 bg-white px-3 py-2" aria-label="Filtrar por temperatura">
+              <option value="">Todas as temperaturas</option>
+              <option value="quente">🔥 Quente</option>
+              <option value="morno">🌤️ Morno</option>
+              <option value="frio">❄️ Frio</option>
+            </select>
+            <button id="csv" class="btn-secundario px-4 py-2 text-sm">Exportar CSV</button>
+            <button id="atualizar" class="btn-secundario px-4 py-2 text-sm">Atualizar</button>
+          </div>
+        </div>
+        <div class="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+          <table class="w-full min-w-[860px] text-left text-sm">
+            <thead class="bg-marinho-50 text-xs uppercase text-slate-600">
+              <tr><th class="p-3">Data</th><th class="p-3">Pessoa</th><th class="p-3">Assunto</th><th class="p-3">Situação</th><th class="p-3">Temperatura</th><th class="p-3">Equipe</th><th class="p-3"></th></tr>
+            </thead>
+            <tbody id="linhas" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <p id="vazio" hidden class="mt-6 text-center text-slate-500">Nenhum lead encontrado.</p>
+      </section>
+    </main>
+
+    <script>
+      import { formatarWhatsapp, primeiroNome, proximaPergunta, resumo, trilhaPorId, type Lead } from "../config/qualificacao";
+
+      const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+      const CHAVE = "nescon-painel";
+      let senha = "";
+      let todos: Lead[] = [];
+      try {
+        senha = sessionStorage.getItem(CHAVE) ?? "";
+      } catch {
+        /* sem armazenamento: pede a senha a cada visita */
+      }
+
+      const fmt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
+      const selo = { quente: "🔥 Quente", morno: "🌤️ Morno", frio: "❄️ Frio" } as const;
+
+      async function api(metodo: "GET" | "POST", corpo?: unknown) {
+        const r = await fetch("/api/painel/leads", {
+          method: metodo,
+          headers: { Authorization: `Bearer ${senha}`, "Content-Type": "application/json" },
+          body: corpo ? JSON.stringify(corpo) : undefined,
+        });
+        const dados = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(dados.erro || `Erro ${r.status}`);
+        return dados;
+      }
+
+      function situacao(l: Lead) {
+        if (l.status === "completo") return "✅ Concluído";
+        const parou = proximaPergunta(l.respostas)?.rotulo ?? "—";
+        return `${l.abandonoNotificadoEm ? "⚠️ Abandonou" : "⏳ Em andamento"} (parou em: ${parou})`;
+      }
+
+      function filtrados() {
+        const s = $<HTMLSelectElement>("f-status").value;
+        const t = $<HTMLSelectElement>("f-trilha").value;
+        const c = $<HTMLSelectElement>("f-classe").value;
+        return todos.filter((l) => (!s || l.status === s) && (!t || l.respostas.trilha === t) && (!c || l.classificacao === c));
+      }
+
+      function celula(texto: string, classe = "p-3 align-top") {
+        const td = document.createElement("td");
+        td.className = classe;
+        td.textContent = texto;
+        return td;
+      }
+
+      function desenhar() {
+        const lista = filtrados();
+        const tbody = $("linhas");
+        tbody.replaceChildren();
+        $("vazio").hidden = lista.length > 0;
+
+        const cont = $("contadores");
+        cont.replaceChildren();
+        for (const [rotulo, n] of [
+          ["Total", todos.length],
+          ["Concluídos", todos.filter((l) => l.status === "completo").length],
+          ["Abandonados", todos.filter((l) => l.abandonoNotificadoEm && l.status !== "completo").length],
+          ["Quentes", todos.filter((l) => l.classificacao === "quente").length],
+        ] as const) {
+          const li = document.createElement("li");
+          li.className = "cartao px-4 py-3";
+          li.innerHTML = `<p class="text-2xl font-extrabold text-marinho-800">${n}</p><p class="text-xs text-slate-500">${rotulo}</p>`;
+          cont.appendChild(li);
+        }
+
+        for (const l of lista) {
+          const r = l.respostas;
+          const tr = document.createElement("tr");
+          tr.appendChild(celula(fmt.format(new Date(l.criadoEm))));
+          const pessoa = celula(r.nome ?? "");
+          pessoa.insertAdjacentHTML("beforeend", "<br>");
+          const contato = document.createElement("span");
+          contato.className = "text-xs text-slate-500";
+          contato.textContent = `${formatarWhatsapp(r.whatsapp ?? "")} · ${r.email ?? ""}`;
+          pessoa.appendChild(contato);
+          tr.appendChild(pessoa);
+          tr.appendChild(celula(trilhaPorId(r.trilha)?.rotulo ?? "—"));
+          tr.appendChild(celula(situacao(l)));
+          tr.appendChild(celula(l.classificacao ? selo[l.classificacao] : "—"));
+
+          const tdEquipe = document.createElement("td");
+          tdEquipe.className = "p-3 align-top";
+          const sel = document.createElement("select");
+          sel.className = "rounded-lg border border-slate-300 bg-white px-2 py-1";
+          sel.setAttribute("aria-label", `Situação do atendimento de ${r.nome}`);
+          for (const [v, t] of [["novo", "Novo"], ["contatado", "Contatado"], ["cliente", "Virou cliente"], ["descartado", "Descartado"]]) {
+            sel.add(new Option(t, v, false, l.statusEquipe === v));
+          }
+          sel.addEventListener("change", async () => {
+            try {
+              await api("POST", { id: l.id, statusEquipe: sel.value });
+              l.statusEquipe = sel.value as Lead["statusEquipe"];
+            } catch (e) {
+              alert((e as Error).message);
+              sel.value = l.statusEquipe;
+            }
+          });
+          tdEquipe.appendChild(sel);
+          tr.appendChild(tdEquipe);
+
+          const tdAcoes = document.createElement("td");
+          tdAcoes.className = "p-3 align-top whitespace-nowrap";
+          const wa = document.createElement("a");
+          wa.href = `https://wa.me/${r.whatsapp}?text=${encodeURIComponent(`Olá, ${primeiroNome(r.nome)}! Aqui é da equipe de contabilidade, recebemos seu contato pelo site.`)}`;
+          wa.target = "_blank";
+          wa.rel = "noopener";
+          wa.className = "font-semibold text-destaque-700 hover:underline";
+          wa.textContent = "WhatsApp";
+          const det = document.createElement("details");
+          det.className = "mt-1";
+          const sum = document.createElement("summary");
+          sum.className = "cursor-pointer text-xs text-slate-500";
+          sum.textContent = "Respostas";
+          const dl = document.createElement("dl");
+          dl.className = "mt-2 w-72 whitespace-normal text-xs";
+          for (const linha of resumo(r)) {
+            const dt = document.createElement("dt");
+            dt.className = "font-semibold text-slate-600";
+            dt.textContent = linha.rotulo;
+            const dd = document.createElement("dd");
+            dd.className = "mb-1";
+            dd.textContent = linha.valor;
+            dl.append(dt, dd);
+          }
+          if (l.recomendacao) {
+            const rec = document.createElement("p");
+            rec.className = "mt-2 rounded bg-marinho-50 p-2";
+            rec.textContent = l.recomendacao;
+            dl.appendChild(rec);
+          }
+          det.append(sum, dl);
+          tdAcoes.append(wa, det);
+          tr.appendChild(tdAcoes);
+          tbody.appendChild(tr);
+        }
+      }
+
+      function exportarCsv() {
+        const linhas = filtrados().map((l) => {
+          const r = l.respostas;
+          const campos = [fmt.format(new Date(l.criadoEm)), r.nome, r.email, r.whatsapp, trilhaPorId(r.trilha)?.rotulo, l.status, l.classificacao, l.statusEquipe, resumo(r).map((x) => `${x.rotulo}: ${x.valor}`).join(" | ")];
+          return campos.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(";");
+        });
+        const csv = "﻿" + ["Data;Nome;E-mail;WhatsApp;Assunto;Situação;Temperatura;Equipe;Respostas", ...linhas].join("\n");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+
+      async function carregar() {
+        try {
+          const dados = await api("GET");
+          todos = dados.leads;
+          $("login").hidden = true;
+          $("app").hidden = false;
+          $("sair").hidden = false;
+          try {
+            sessionStorage.setItem(CHAVE, senha);
+          } catch {
+            /* ignora */
+          }
+          desenhar();
+        } catch (e) {
+          $("login").hidden = false;
+          $("app").hidden = true;
+          $("login-erro").textContent = senha ? (e as Error).message : "";
+        }
+      }
+
+      $("login").addEventListener("submit", (e) => {
+        e.preventDefault();
+        senha = $<HTMLInputElement>("senha").value;
+        carregar();
+      });
+      $("sair").addEventListener("click", () => {
+        try {
+          sessionStorage.removeItem(CHAVE);
+        } catch {
+          /* ignora */
+        }
+        location.reload();
+      });
+      for (const id of ["f-status", "f-trilha", "f-classe"]) $(id).addEventListener("change", desenhar);
+      $("csv").addEventListener("click", exportarCsv);
+      $("atualizar").addEventListener("click", carregar);
+      if (senha) carregar();
+    </script>
+  </body>
+</html>

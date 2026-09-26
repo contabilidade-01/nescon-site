@@ -8,6 +8,6 @@ export default defineConfig({
   site: escritorio.url,
   trailingSlash: "never",
   build: { format: "file" },
-  integrations: [sitemap({ filter: (page) => !page.includes("/admin") })],
+  integrations: [sitemap({ filter: (page) => !page.includes("/admin") && !page.includes("/painel") })],
   vite: { plugins: [tailwindcss()] },
 });

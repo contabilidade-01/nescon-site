@@ -10,12 +10,13 @@
     "cms": "npx decap-server"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.128.0",
     "@astrojs/check": "^0.9.10",
     "@astrojs/sitemap": "^3.7.4",
+    "@netlify/blobs": "^10.7.13",
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.5",
+    "resend": "^6.30.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },

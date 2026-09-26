@@ -72,6 +72,6 @@ const ga4 = escritorio.analytics.ga4;
   // Cliques em links de WhatsApp fora do chat também contam como conversão
   document.addEventListener("click", (e) => {
     const link = e.target instanceof Element ? e.target.closest('a[href^="https://wa.me/"]') : null;
-    if (link && !link.closest("#chat")) window.nesconEvento("whatsapp_clique", { origem: location.pathname });
+    if (link && !link.closest("#qualificacao")) window.nesconEvento("whatsapp_clique", { origem: location.pathname });
   });
 </script>
