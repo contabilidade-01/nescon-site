@@ -1,0 +1,35 @@
+services:
+  wordpress:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${DB_NAME:-nescon}
+      WORDPRESS_DB_USER: ${DB_USER:-nescon}
+      WORDPRESS_DB_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD}"
+      WORDPRESS_SITE_URL: "${SITE_URL:?defina SITE_URL (ex. https://www.nescon.com.br)}"
+      WORDPRESS_SITE_TITLE: "${SITE_TITLE:-Nescon Contabilidade}"
+      WORDPRESS_ADMIN_USER: "${WP_ADMIN_USER:?defina WP_ADMIN_USER}"
+      WORDPRESS_ADMIN_PASSWORD: "${WP_ADMIN_PASSWORD:?defina WP_ADMIN_PASSWORD}"
+      WORDPRESS_ADMIN_EMAIL: "${WP_ADMIN_EMAIL:?defina WP_ADMIN_EMAIL}"
+    volumes:
+      - wp_data:/var/www/html
+    ports:
+      - "8080:80"
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-nescon}
+      MYSQL_USER: ${DB_USER:-nescon}
+      MYSQL_PASSWORD: "${DB_PASSWORD:?defina DB_PASSWORD}"
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  wp_data:
+  db_data:
