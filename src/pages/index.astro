@@ -86,19 +86,6 @@ const passos = [
     </ol>
   </section>
 
-  <section class="container-site mt-20" aria-labelledby="quem-titulo">
-    <div class="cartao grid gap-8 md:grid-cols-[auto_1fr] md:items-center">
-      <img src={escritorio.responsavel.foto} alt={`Foto de ${escritorio.responsavel.nome}`} width="160" height="160" class="h-40 w-40 rounded-full bg-marinho-50 object-cover" loading="lazy" />
-      <div>
-        <p class="eyebrow">Quem cuida da sua empresa</p>
-        <h2 id="quem-titulo" class="mt-2 text-2xl font-bold">{escritorio.responsavel.nome}</h2>
-        <p class="text-sm text-slate-500">{escritorio.responsavel.cargo} · {escritorio.responsavel.crc}</p>
-        <p class="mt-3 max-w-2xl text-slate-700">{escritorio.responsavel.bio}</p>
-        <a href="/sobre" class="mt-4 inline-block font-semibold text-destaque-700">Conheça o escritório →</a>
-      </div>
-    </div>
-  </section>
-
   {artigos.length > 0 && (
     <section class="container-site mt-20" aria-labelledby="blog-titulo">
       <div class="flex items-end justify-between gap-4">
