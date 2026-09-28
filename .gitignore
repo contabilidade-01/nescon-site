@@ -1,0 +1,13 @@
+# WordPress core and third-party dependencies are installed via Composer,
+# not committed to this repo. Only our own theme/template code is tracked.
+/wp/
+/wp-content/plugins/
+/wp-content/themes/oceanwp/
+/wp-content/uploads/
+/wp-content/upgrade/
+/wp-content/cache/
+wp-config.php
+.env
+vendor/
+node_modules/
+*.log

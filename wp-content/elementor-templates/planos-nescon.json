@@ -1,0 +1,916 @@
+{
+  "content": [
+    {
+      "id": "0000007",
+      "elType": "section",
+      "settings": {
+        "layout": "full_width",
+        "background_background": "classic",
+        "background_color": "#0A2540",
+        "padding": {
+          "unit": "px",
+          "top": 15,
+          "right": 30,
+          "bottom": 15,
+          "left": 30,
+          "isLinked": false
+        },
+        "sticky": "top",
+        "css_classes": "nescon-header"
+      },
+      "elements": [
+        {
+          "id": "0000004",
+          "elType": "column",
+          "settings": {
+            "_column_size": 20
+          },
+          "elements": [
+            {
+              "id": "0000001",
+              "elType": "widget",
+              "settings": {
+                "title": "NESCON",
+                "header_size": "h1",
+                "align": "left",
+                "title_color": "#FFFFFF",
+                "typography_typography": "custom",
+                "typography_font_family": "League Spartan",
+                "typography_font_weight": "800",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 28,
+                  "sizes": []
+                }
+              },
+              "elements": [],
+              "widgetType": "heading"
+            }
+          ]
+        },
+        {
+          "id": "0000005",
+          "elType": "column",
+          "settings": {
+            "_column_size": 55
+          },
+          "elements": [
+            {
+              "id": "0000002",
+              "elType": "widget",
+              "settings": {
+                "menu": "main-menu",
+                "layout": "horizontal",
+                "align_items": "center",
+                "pointer": "underline"
+              },
+              "elements": [],
+              "widgetType": "nav-menu"
+            }
+          ]
+        },
+        {
+          "id": "0000006",
+          "elType": "column",
+          "settings": {
+            "_column_size": 25
+          },
+          "elements": [
+            {
+              "id": "0000003",
+              "elType": "widget",
+              "settings": {
+                "text": "Abrir minha empresa",
+                "align": "right",
+                "background_color": "#C89B3C",
+                "button_text_color": "#0A2540",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 20,
+                  "right": 20,
+                  "bottom": 20,
+                  "left": 20,
+                  "isLinked": true
+                },
+                "link": {
+                  "url": "#planos",
+                  "is_external": "",
+                  "nofollow": ""
+                }
+              },
+              "elements": [],
+              "widgetType": "button"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "000000d",
+      "elType": "section",
+      "settings": {
+        "layout": "full_width",
+        "background_background": "classic",
+        "background_color": "#0A2540",
+        "background_overlay_background": "classic",
+        "background_overlay_color": "#0A2540",
+        "background_overlay_opacity": {
+          "unit": "px",
+          "size": 0.6,
+          "sizes": []
+        },
+        "padding": {
+          "unit": "px",
+          "top": 130,
+          "right": 30,
+          "bottom": 100,
+          "left": 30,
+          "isLinked": false
+        },
+        "content_position": "middle",
+        "css_classes": "nescon-hero"
+      },
+      "elements": [
+        {
+          "id": "000000c",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "0000008",
+              "elType": "widget",
+              "settings": {
+                "title": "ABERTURA DE",
+                "header_size": "h1",
+                "align": "center",
+                "title_color": "#FFFFFF",
+                "typography_typography": "custom",
+                "typography_font_family": "Raleway",
+                "typography_font_weight": "800",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 56,
+                  "sizes": []
+                }
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "0000009",
+              "elType": "widget",
+              "settings": {
+                "title": "EMPRESA",
+                "header_size": "h1",
+                "align": "center",
+                "title_color": "#C89B3C",
+                "typography_typography": "custom",
+                "typography_font_family": "Raleway",
+                "typography_font_weight": "800",
+                "typography_font_size": {
+                  "unit": "px",
+                  "size": 56,
+                  "sizes": []
+                },
+                "_element_id": "nescon-hero-highlight"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "000000a",
+              "elType": "widget",
+              "settings": {
+                "title": "Abra seu CNPJ com a Nescon: simples, rápido e 100% online.",
+                "header_size": "h3",
+                "align": "center",
+                "title_color": "#FFFFFF",
+                "typography_typography": "custom",
+                "typography_font_family": "Poppins",
+                "typography_font_style": "italic",
+                "typography_font_weight": "500"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "000000b",
+              "elType": "widget",
+              "settings": {
+                "text": "QUERO ABRIR MINHA EMPRESA",
+                "align": "center",
+                "size": "lg",
+                "background_color": "#C89B3C",
+                "button_text_color": "#0A2540",
+                "border_radius": {
+                  "unit": "px",
+                  "top": 10,
+                  "right": 10,
+                  "bottom": 10,
+                  "left": 10,
+                  "isLinked": true
+                },
+                "link": {
+                  "url": "#contato",
+                  "is_external": "",
+                  "nofollow": ""
+                }
+              },
+              "elements": [],
+              "widgetType": "button"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000019",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#FFFFFF",
+        "padding": {
+          "unit": "px",
+          "top": 80,
+          "right": 30,
+          "bottom": 80,
+          "left": 30,
+          "isLinked": false
+        },
+        "css_classes": "nescon-steps"
+      },
+      "elements": [
+        {
+          "id": "0000018",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "000000e",
+              "elType": "widget",
+              "settings": {
+                "title": "Como funciona",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#0A2540",
+                "typography_typography": "custom",
+                "typography_font_family": "Raleway",
+                "typography_font_weight": "700"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "0000017",
+              "elType": "section",
+              "settings": {
+                "gap": "extended"
+              },
+              "elements": [
+                {
+                  "id": "0000010",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 25
+                  },
+                  "elements": [
+                    {
+                      "id": "000000f",
+                      "elType": "widget",
+                      "settings": {
+                        "icon_box_text": "1",
+                        "icon_position": "top",
+                        "position": "center",
+                        "title_text": "Preencha o formulário",
+                        "description_text": "Conte pra gente o tipo de negócio e os dados iniciais da empresa.",
+                        "title_size": "h4"
+                      },
+                      "elements": [],
+                      "widgetType": "icon-box"
+                    }
+                  ]
+                },
+                {
+                  "id": "0000012",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 25
+                  },
+                  "elements": [
+                    {
+                      "id": "0000011",
+                      "elType": "widget",
+                      "settings": {
+                        "icon_box_text": "2",
+                        "icon_position": "top",
+                        "position": "center",
+                        "title_text": "Fale com um especialista",
+                        "description_text": "Um contador da Nescon entra em contato para tirar dúvidas e orientar o processo.",
+                        "title_size": "h4"
+                      },
+                      "elements": [],
+                      "widgetType": "icon-box"
+                    }
+                  ]
+                },
+                {
+                  "id": "0000014",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 25
+                  },
+                  "elements": [
+                    {
+                      "id": "0000013",
+                      "elType": "widget",
+                      "settings": {
+                        "icon_box_text": "3",
+                        "icon_position": "top",
+                        "position": "center",
+                        "title_text": "Envie os documentos",
+                        "description_text": "Envie os documentos necessários direto pelo WhatsApp ou e-mail, sem burocracia.",
+                        "title_size": "h4"
+                      },
+                      "elements": [],
+                      "widgetType": "icon-box"
+                    }
+                  ]
+                },
+                {
+                  "id": "0000016",
+                  "elType": "column",
+                  "settings": {
+                    "_column_size": 25
+                  },
+                  "elements": [
+                    {
+                      "id": "0000015",
+                      "elType": "widget",
+                      "settings": {
+                        "icon_box_text": "4",
+                        "icon_position": "top",
+                        "position": "center",
+                        "title_text": "Empresa aberta",
+                        "description_text": "Acompanhe o processo até o CNPJ sair, com total transparência.",
+                        "title_size": "h4"
+                      },
+                      "elements": [],
+                      "widgetType": "icon-box"
+                    }
+                  ]
+                }
+              ],
+              "isInner": true
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000022",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#F7F8FA",
+        "padding": {
+          "unit": "px",
+          "top": 20,
+          "right": 30,
+          "bottom": 0,
+          "left": 30,
+          "isLinked": false
+        },
+        "css_classes": "nescon-plans"
+      },
+      "elements": [
+        {
+          "id": "0000021",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "000001a",
+              "elType": "widget",
+              "settings": {
+                "title": "Nossos Planos",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#0A2540",
+                "typography_typography": "custom",
+                "typography_font_family": "Raleway",
+                "typography_font_weight": "700",
+                "_element_id": "planos"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000035",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#F7F8FA",
+        "padding": {
+          "unit": "px",
+          "top": 20,
+          "right": 30,
+          "bottom": 80,
+          "left": 30,
+          "isLinked": false
+        },
+        "gap": "extended",
+        "css_classes": "nescon-plans"
+      },
+      "elements": [
+        {
+          "id": "000001c",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "000001b",
+              "elType": "widget",
+              "settings": {
+                "heading": "MEI",
+                "sub_heading": "por mês",
+                "currency_symbol": "dollar",
+                "currency_format": "custom",
+                "custom_currency_symbol": "R$",
+                "price": "129",
+                "period": "/mês",
+                "features_list": [
+                  {
+                    "text": "Abertura de CNPJ grátis",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Emissão de guias mensais",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Suporte via WhatsApp",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  }
+                ],
+                "button_text": "Contratar",
+                "link": {
+                  "url": "#contato",
+                  "is_external": "",
+                  "nofollow": ""
+                },
+                "ribbon_title": "",
+                "show_ribbon": ""
+              },
+              "elements": [],
+              "widgetType": "price-table"
+            }
+          ]
+        },
+        {
+          "id": "000001e",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "000001d",
+              "elType": "widget",
+              "settings": {
+                "heading": "Simples Nacional",
+                "sub_heading": "por mês",
+                "currency_symbol": "dollar",
+                "currency_format": "custom",
+                "custom_currency_symbol": "R$",
+                "price": "289",
+                "period": "/mês",
+                "features_list": [
+                  {
+                    "text": "Tudo do plano MEI",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Folha de pagamento",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Emissão de notas fiscais",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Consultoria tributária",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  }
+                ],
+                "button_text": "Contratar",
+                "link": {
+                  "url": "#contato",
+                  "is_external": "",
+                  "nofollow": ""
+                },
+                "ribbon_title": "Mais popular",
+                "show_ribbon": "yes"
+              },
+              "elements": [],
+              "widgetType": "price-table"
+            }
+          ]
+        },
+        {
+          "id": "0000020",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "000001f",
+              "elType": "widget",
+              "settings": {
+                "heading": "Lucro Presumido",
+                "sub_heading": "por mês",
+                "currency_symbol": "dollar",
+                "currency_format": "custom",
+                "custom_currency_symbol": "R$",
+                "price": "489",
+                "period": "/mês",
+                "features_list": [
+                  {
+                    "text": "Tudo do plano anterior",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Relatórios gerenciais",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Contador dedicado",
+                    "selected_icon": {
+                      "value": "fas fa-check",
+                      "library": "fa-solid"
+                    }
+                  }
+                ],
+                "button_text": "Contratar",
+                "link": {
+                  "url": "#contato",
+                  "is_external": "",
+                  "nofollow": ""
+                },
+                "ribbon_title": "",
+                "show_ribbon": ""
+              },
+              "elements": [],
+              "widgetType": "price-table"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000027",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#0A2540",
+        "padding": {
+          "unit": "px",
+          "top": 90,
+          "right": 30,
+          "bottom": 90,
+          "left": 30,
+          "isLinked": false
+        },
+        "content_position": "middle",
+        "css_classes": "nescon-contact"
+      },
+      "elements": [
+        {
+          "id": "0000026",
+          "elType": "column",
+          "settings": {
+            "_column_size": 60
+          },
+          "elements": [
+            {
+              "id": "0000023",
+              "elType": "widget",
+              "settings": {
+                "title": "Fale com um especialista",
+                "header_size": "h2",
+                "align": "center",
+                "title_color": "#FFFFFF",
+                "typography_typography": "custom",
+                "typography_font_family": "Raleway",
+                "typography_font_weight": "700",
+                "_element_id": "contato"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "0000024",
+              "elType": "widget",
+              "settings": {
+                "editor": "<p style=\"text-align:center;\">Preencha o formulário abaixo e um de nossos especialistas retorna em até 1 dia útil.</p>",
+                "text_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "text-editor"
+            },
+            {
+              "id": "0000025",
+              "elType": "widget",
+              "settings": {
+                "form_name": "Contato Nescon",
+                "form_fields": [
+                  {
+                    "custom_id": "name",
+                    "field_label": "Nome completo",
+                    "field_type": "text",
+                    "required": "true",
+                    "width": "100"
+                  },
+                  {
+                    "custom_id": "phone",
+                    "field_label": "WhatsApp",
+                    "field_type": "tel",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "email",
+                    "field_label": "E-mail",
+                    "field_type": "email",
+                    "required": "true",
+                    "width": "50"
+                  },
+                  {
+                    "custom_id": "message",
+                    "field_label": "Como podemos ajudar?",
+                    "field_type": "textarea",
+                    "required": "false",
+                    "width": "100"
+                  }
+                ],
+                "button_text": "Enviar",
+                "email_to": "[email protected]"
+              },
+              "elements": [],
+              "widgetType": "form"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000031",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#123A63",
+        "padding": {
+          "unit": "px",
+          "top": 60,
+          "right": 30,
+          "bottom": 30,
+          "left": 30,
+          "isLinked": false
+        },
+        "css_classes": "nescon-footer"
+      },
+      "elements": [
+        {
+          "id": "000002e",
+          "elType": "column",
+          "settings": {
+            "_column_size": 34
+          },
+          "elements": [
+            {
+              "id": "0000028",
+              "elType": "widget",
+              "settings": {
+                "title": "Nescon Contabilidade",
+                "header_size": "h4",
+                "title_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "0000029",
+              "elType": "widget",
+              "settings": {
+                "editor": "<p>Contabilidade digital para pequenas e médias empresas, com atendimento humano e tecnologia de ponta.</p>",
+                "text_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "text-editor"
+            }
+          ]
+        },
+        {
+          "id": "000002f",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "000002a",
+              "elType": "widget",
+              "settings": {
+                "title": "Contato",
+                "header_size": "h4",
+                "title_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "000002b",
+              "elType": "widget",
+              "settings": {
+                "icon_list": [
+                  {
+                    "text": "(11) 0000-0000",
+                    "selected_icon": {
+                      "value": "fas fa-phone",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "contato@nescon.com.br",
+                    "selected_icon": {
+                      "value": "fas fa-envelope",
+                      "library": "fa-solid"
+                    }
+                  },
+                  {
+                    "text": "Av. Exemplo, 1000 - São Paulo/SP",
+                    "selected_icon": {
+                      "value": "fas fa-map-marker-alt",
+                      "library": "fa-solid"
+                    }
+                  }
+                ],
+                "icon_color": "#C89B3C",
+                "text_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "icon-list"
+            }
+          ]
+        },
+        {
+          "id": "0000030",
+          "elType": "column",
+          "settings": {
+            "_column_size": 33
+          },
+          "elements": [
+            {
+              "id": "000002c",
+              "elType": "widget",
+              "settings": {
+                "title": "Redes sociais",
+                "header_size": "h4",
+                "title_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "heading"
+            },
+            {
+              "id": "000002d",
+              "elType": "widget",
+              "settings": {
+                "social_icon_list": [
+                  {
+                    "social_icon": {
+                      "value": "fab fa-facebook-f",
+                      "library": "fa-brands"
+                    },
+                    "link": {
+                      "url": "https://www.facebook.com/"
+                    }
+                  },
+                  {
+                    "social_icon": {
+                      "value": "fab fa-instagram",
+                      "library": "fa-brands"
+                    },
+                    "link": {
+                      "url": "https://www.instagram.com/"
+                    }
+                  },
+                  {
+                    "social_icon": {
+                      "value": "fab fa-whatsapp",
+                      "library": "fa-brands"
+                    },
+                    "link": {
+                      "url": "https://wa.me/5500000000000"
+                    }
+                  }
+                ],
+                "shape": "circle"
+              },
+              "elements": [],
+              "widgetType": "social-icons"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    },
+    {
+      "id": "0000034",
+      "elType": "section",
+      "settings": {
+        "background_background": "classic",
+        "background_color": "#0A2540",
+        "padding": {
+          "unit": "px",
+          "top": 20,
+          "right": 30,
+          "bottom": 20,
+          "left": 30,
+          "isLinked": false
+        },
+        "css_classes": "nescon-footer"
+      },
+      "elements": [
+        {
+          "id": "0000033",
+          "elType": "column",
+          "settings": {
+            "_column_size": 100
+          },
+          "elements": [
+            {
+              "id": "0000032",
+              "elType": "widget",
+              "settings": {
+                "editor": "<p style=\"text-align:center;\">&copy; 2026 Nescon Contabilidade. Todos os direitos reservados.</p>",
+                "text_color": "#FFFFFF"
+              },
+              "elements": [],
+              "widgetType": "text-editor"
+            }
+          ]
+        }
+      ],
+      "isInner": false
+    }
+  ],
+  "page_settings": [],
+  "version": "0.4",
+  "title": "Nescon - Página de Planos (Abertura de Empresa)",
+  "type": "page"
+}

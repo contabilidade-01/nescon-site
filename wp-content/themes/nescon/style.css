@@ -1,0 +1,123 @@
+/*
+Theme Name: Nescon Contabilidade
+Theme URI: https://www.nescon.com.br
+Description: Tema filho do OceanWP para o site institucional da Nescon Contabilidade. Reproduz a estrutura visual (cabeçalho, hero, seção "como funciona", planos, formulário de contato e rodapé) usada como referência de mercado, com identidade própria da Nescon.
+Author: Nescon
+Template: oceanwp
+Version: 1.0.0
+Text Domain: nescon
+*/
+
+:root {
+    --nescon-navy: #0A2540;
+    --nescon-navy-light: #123a63;
+    --nescon-gold: #C89B3C;
+    --nescon-gold-light: #e0b96a;
+    --nescon-text: #4A4A4A;
+    --nescon-bg: #F7F8FA;
+    --nescon-white: #FFFFFF;
+}
+
+body {
+    color: var(--nescon-text);
+}
+
+/* Header */
+.nescon-header {
+    background-color: var(--nescon-navy);
+}
+
+.nescon-header .elementor-nav-menu .elementor-item {
+    color: var(--nescon-white);
+    font-family: "Raleway", sans-serif;
+    font-weight: 700;
+}
+
+.nescon-header .elementor-nav-menu .elementor-item:hover,
+.nescon-header .elementor-nav-menu .elementor-item.elementor-item-active {
+    color: var(--nescon-gold);
+}
+
+/* Hero */
+.nescon-hero {
+    background-color: var(--nescon-navy);
+}
+
+.nescon-hero .elementor-heading-title {
+    color: var(--nescon-white);
+    font-family: "Raleway", sans-serif;
+    text-transform: uppercase;
+    font-weight: 800;
+}
+
+.nescon-hero .nescon-hero-highlight .elementor-heading-title {
+    color: var(--nescon-gold);
+}
+
+/* Steps ("Como funciona") */
+.nescon-steps .elementor-icon-box-icon {
+    background-color: var(--nescon-gold);
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.nescon-steps .elementor-icon-box-icon i {
+    color: var(--nescon-white);
+}
+
+.nescon-steps .elementor-icon-box-title {
+    color: var(--nescon-navy);
+    font-weight: 700;
+}
+
+/* Plans */
+.nescon-plans {
+    background-color: var(--nescon-bg);
+}
+
+.nescon-plans .elementor-price-table {
+    border-radius: 12px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.nescon-plans .elementor-price-table__header {
+    background-color: var(--nescon-navy);
+}
+
+.nescon-plans .elementor-price-table__price-integer,
+.nescon-plans .elementor-price-table__header-title {
+    color: var(--nescon-white);
+}
+
+/* Contact form section */
+.nescon-contact {
+    background-color: var(--nescon-navy);
+}
+
+.nescon-contact .elementor-heading-title {
+    color: var(--nescon-white);
+}
+
+.nescon-contact .elementor-field-group .elementor-field {
+    border-radius: 20px;
+}
+
+.nescon-contact .elementor-button {
+    background-color: var(--nescon-gold);
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+/* Footer */
+.nescon-footer {
+    background-color: var(--nescon-navy-light);
+    color: var(--nescon-white);
+}
+
+.nescon-footer a {
+    color: var(--nescon-white);
+}
+
+.nescon-footer a:hover {
+    color: var(--nescon-gold);
+}

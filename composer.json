@@ -1,0 +1,35 @@
+{
+    "name": "nescon/site",
+    "type": "project",
+    "description": "Site institucional da Nescon Contabilidade (WordPress + Elementor)",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0",
+        "composer/installers": "^2.2",
+        "johnpbloch/wordpress-core": "^6.6",
+        "wpackagist-theme/oceanwp": "^3.0",
+        "wpackagist-plugin/ocean-extra": "*",
+        "wpackagist-plugin/elementor": "*",
+        "wpackagist-plugin/contact-form-7": "*"
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://wpackagist.org"
+        }
+    ],
+    "extra": {
+        "wordpress-install-dir": "wp",
+        "installer-paths": {
+            "wp-content/themes/{$name}/": ["type:wordpress-theme"],
+            "wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
+            "wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "composer/installers": true,
+            "johnpbloch/wordpress-core-installer": true
+        }
+    }
+}
