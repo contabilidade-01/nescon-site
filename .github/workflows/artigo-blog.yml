@@ -1,0 +1,75 @@
+# Gera um rascunho de artigo para o blog com a API do Claude e abre uma
+# issue para revisão. Veja automation/blog/README.md.
+name: Artigo do blog
+
+on:
+  schedule:
+    # Segundas e quintas, 8h no horário de Brasília.
+    - cron: "0 11 * * 1,4"
+  workflow_dispatch:
+    inputs:
+      tema:
+        description: "Tema do artigo (vazio = próximo da lista de pautas)"
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: artigo-blog
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation/blog
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependências
+        run: composer install --no-interaction --no-progress
+
+      - name: Gerar rascunho
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          WP_URL: ${{ vars.WP_URL }}
+          WP_USER: ${{ vars.WP_USER }}
+          WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+          TEMA: ${{ inputs.tema }}
+        run: php gerar-artigo.php --tema="$TEMA" --saida=resultado.json
+
+      - name: Abrir issue de revisão
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          titulo=$(jq -r .titulo resultado.json)
+          {
+            echo "Rascunho criado no WordPress. Revise e publique quando estiver tudo certo."
+            echo
+            echo "- **Editar:** $(jq -r .editar resultado.json)"
+            echo "- **Resumo:** $(jq -r .resumo resultado.json)"
+            echo
+            echo "### Pontos para conferir antes de publicar"
+            jq -r '.pontos_de_revisao[] | "- [ ] " + .' resultado.json
+            echo
+            echo "Depois de publicar, adicione o card do artigo na página /blog e feche esta issue."
+          } > corpo.md
+          gh issue create --title "Revisar artigo: $titulo" --body-file corpo.md
+
+      - name: Tirar o tema usado da lista de pautas
+        if: inputs.tema == ''
+        run: |
+          tema=$(jq -r '.tema // empty' resultado.json)
+          [ -n "$tema" ] || exit 0
+          TEMA="$tema" php -r '
+            $linhas = file("pautas.txt", FILE_IGNORE_NEW_LINES);
+            $i = array_search(getenv("TEMA"), array_map("trim", $linhas), true);
+            if ($i !== false) { unset($linhas[$i]); }
+            file_put_contents("pautas.txt", implode("\n", $linhas)."\n");
+          '
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Blog: tema usado removido das pautas ($tema)"
+          git push
