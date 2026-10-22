@@ -36,5 +36,6 @@ A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Em
 fila, início da tarefa, buscas do Claude no gov.br, texto salvo, imagem da
 OpenAI e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
 novidade. Se o servidor encerrar a tarefa no meio, o pedido vira erro com o
-motivo. Se um pedido passar de 10 minutos parado, a tela mostra **Tentar de
-novo**.
+motivo. O texto e a imagem rodam em tarefas separadas, para cada uma caber no
+limite de tempo da hospedagem. Se um pedido passar de 10 minutos parado, a tela
+mostra **Tentar de novo** e, se o texto já foi salvo, **Gerar só a imagem**.
