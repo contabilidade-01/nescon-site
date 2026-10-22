@@ -216,7 +216,7 @@ function nescon_artigo_main(WP_Post $post, string $conteudo, string $cta_final):
         $html .= '<p class="eyebrow">' . esc_html($categoria) . '</p>';
     }
     $html .= '<h1 class="mt-3 text-4xl font-extrabold leading-tight">' . $titulo . '</h1>';
-    $html .= '<p class="mt-4 text-sm text-slate-600">Por <a href="/sobre" class="font-semibold text-marinho-800 hover:underline">' . esc_html(NESCON_AUTOR) . '</a>, ' . esc_html(NESCON_AUTOR_CARGO) . ' · Atualizado em <time datetime="' . esc_attr(mysql2date('c', $data)) . '">' . esc_html(nescon_data_extenso($data)) . '</time></p>';
+    $html .= '<p class="mt-4 text-sm text-slate-600">Atualizado em <time datetime="' . esc_attr(mysql2date('c', $data)) . '">' . esc_html(nescon_data_extenso($data)) . '</time></p>';
     $html .= sprintf(
         '<img src="%s" srcset="%s" sizes="(min-width: 768px) 768px, 100vw" alt="%s" width="1500" height="1000" fetchpriority="high" decoding="async" class="mt-8 aspect-[3/2] w-full rounded-3xl object-cover shadow-lg">',
         esc_url($imagem['src']),
