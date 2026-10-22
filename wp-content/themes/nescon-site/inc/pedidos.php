@@ -20,6 +20,24 @@ if (!defined('ABSPATH')) {
 const NESCON_CLAUDE_MODELO = 'claude-opus-5-5';
 const NESCON_PEDIDO_EVENTO = 'nescon_escrever_artigo';
 
+/*
+ * No LiteSpeed (Hostinger), o PHP de uma tarefa agendada é encerrado quando a
+ * requisição que a disparou se desconecta, o que deixava o pedido parado em
+ * "escrevendo". A variável noabort, recomendada pelo LiteSpeed para o
+ * WP-Cron, deixa a tarefa terminar.
+ */
+add_action('admin_init', static function (): void {
+    if (get_option('nescon_noabort') === '1' || !is_writable(ABSPATH . '.htaccess')) {
+        return;
+    }
+    if (!function_exists('insert_with_markers')) {
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+    }
+    if (insert_with_markers(ABSPATH . '.htaccess', 'Nescon LiteSpeed', ['<IfModule Litespeed>', 'SetEnv noabort 1', '</IfModule>'])) {
+        update_option('nescon_noabort', '1');
+    }
+});
+
 /** Papel da equipe de conteúdo: pede e edita artigos, não publica. */
 add_action('init', static function (): void {
     if (get_role('nescon_redator')) {
@@ -254,7 +272,7 @@ function nescon_pedidos_tela(): void
     echo '<table class="widefat striped"><thead><tr><th>Artigo</th><th>Situação</th><th>Ações</th></tr></thead><tbody>';
     foreach ($pedidos as $p) {
         $status = (string) get_post_meta($p->ID, 'nescon_pedido_status', true);
-        $parado = in_array($status, ['fila', 'escrevendo'], true) && time() - (int) get_post_meta($p->ID, 'nescon_pedido_inicio', true) > 15 * MINUTE_IN_SECONDS;
+        $parado = in_array($status, ['fila', 'escrevendo'], true) && time() - (int) get_post_meta($p->ID, 'nescon_pedido_inicio', true) > 10 * MINUTE_IN_SECONDS;
 
         echo '<tr><td><strong>' . esc_html(get_the_title($p)) . '</strong><br><small>Pedido: ' . esc_html((string) get_post_meta($p->ID, 'nescon_pedido_tema', true)) . '</small></td>';
         echo '<td>' . esc_html($parado ? 'Demorou mais que o normal' : nescon_pedido_status_texto($p));
@@ -482,7 +500,8 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 'max_tokens' => 16000,
                 'system' => $sistema,
                 'messages' => $mensagens,
-                'tools' => [['type' => 'web_search_20260209', 'name' => 'web_search', 'allowed_domains' => ['gov.br'], 'max_uses' => 8]],
+                // Poucas buscas mantêm cada chamada bem abaixo do limite de 360 s do PHP.
+                'tools' => [['type' => 'web_search_20260209', 'name' => 'web_search', 'allowed_domains' => ['gov.br'], 'max_uses' => 5]],
                 'output_config' => ['effort' => 'high', 'format' => ['type' => 'json_schema', 'schema' => $esquema]],
             ]);
             // A busca na web roda no servidor do Claude; uma pausa só pede para continuar.
