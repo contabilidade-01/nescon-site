@@ -11,7 +11,14 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
    https://platform.openai.com (**API keys**) e cole no campo de imagens da
    mesma tela (ou `NESCON_OPENAI_API_KEY`). Sem ela, o artigo usa a foto do
    serviço relacionado.
-4. Em **Usuários > Adicionar novo**, crie o usuário de quem vai pedir artigos
+4. Configure o cron do servidor. Tarefas disparadas pelo site são cortadas pela
+   Hostinger em cerca de 2 minutos, e um artigo com pesquisa leva de 2 a 5. No
+   hPanel, em **Avançado > Cron Jobs**, crie uma tarefa PHP a cada minuto com o
+   comando mostrado em **Configurações > Claude (artigos)**
+   (`php …/wp-content/themes/nescon-site/tarefas.php`). A mesma tela mostra se
+   o cron está ativo. Sem ele, o tema ainda funciona pelo site, mas o Claude
+   pesquisa e pensa menos para caber no tempo.
+5. Em **Usuários > Adicionar novo**, crie o usuário de quem vai pedir artigos
    com a função **Redator(a)**: pede artigos, edita rascunhos e envia para
    revisão, mas não publica.
 
@@ -33,8 +40,9 @@ Para mudar o padrão dos artigos, edite o `guia-de-estilo.md` do tema.
 
 A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Em
 **Acompanhar**, cada pedido mostra ao vivo o que está acontecendo, com horário:
-fila, início da tarefa, buscas do Claude no gov.br, texto salvo, imagem da
-OpenAI e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
+fila, início da tarefa, cada pesquisa do Claude no gov.br e as páginas
+encontradas, quantas palavras já foram escritas, texto salvo, imagem da OpenAI
+e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
 novidade. Se o servidor encerrar a tarefa no meio, o pedido vira erro com o
 motivo. O texto e a imagem rodam em tarefas separadas, para cada uma caber no
 limite de tempo da hospedagem. Se um pedido passar de 10 minutos parado, a tela
