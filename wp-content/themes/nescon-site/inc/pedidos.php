@@ -51,10 +51,46 @@ function nescon_claude_chave(): string
     return (string) get_option('nescon_claude_chave', '');
 }
 
+/**
+ * Confere se cada chave cadastrada conecta na respectiva API, sem gerar nada
+ * (consulta só a lista de modelos, que não tem custo).
+ */
+function nescon_testar_chaves(): array
+{
+    $testes = [
+        'Claude' => [nescon_claude_chave(), 'https://api.anthropic.com/v1/models/' . NESCON_CLAUDE_MODELO, static fn (string $chave): array => ['x-api-key' => $chave, 'anthropic-version' => '2023-06-01']],
+        'OpenAI (imagens)' => [nescon_openai_chave(), 'https://api.openai.com/v1/models/gpt-image-1', static fn (string $chave): array => ['Authorization' => 'Bearer ' . $chave]],
+    ];
+    $resultado = [];
+    foreach ($testes as $nome => [$chave, $url, $cabecalhos]) {
+        if ($chave === '') {
+            $resultado[$nome] = [false, 'chave não cadastrada'];
+            continue;
+        }
+        $resposta = wp_remote_get($url, ['timeout' => 20, 'headers' => $cabecalhos($chave)]);
+        if (is_wp_error($resposta)) {
+            $resultado[$nome] = [false, 'o site não conseguiu se conectar (' . $resposta->get_error_message() . ')'];
+            continue;
+        }
+        $codigo = (int) wp_remote_retrieve_response_code($resposta);
+        $erro = json_decode((string) wp_remote_retrieve_body($resposta), true)['error']['message'] ?? '';
+        $resultado[$nome] = match (true) {
+            200 === $codigo => [true, 'conectado'],
+            401 === $codigo => [false, 'chave inválida ou revogada'],
+            403 === $codigo => [false, 'a chave não tem acesso a este modelo' . ($erro !== '' ? " ({$erro})" : '')],
+            404 === $codigo => [false, 'modelo não disponível para esta conta' . ($erro !== '' ? " ({$erro})" : '')],
+            429 === $codigo => [false, 'limite de uso ou créditos esgotados' . ($erro !== '' ? " ({$erro})" : '')],
+            default => [false, "erro HTTP {$codigo}" . ($erro !== '' ? " ({$erro})" : '')],
+        };
+    }
+
+    return $resultado;
+}
+
 /* Configurações > Claude (artigos): só o administrador vê e troca a chave. */
 add_action('admin_menu', static function (): void {
     add_options_page('Claude (artigos)', 'Claude (artigos)', 'manage_options', 'nescon-claude', static function (): void {
-        if (isset($_POST['nescon_claude_chave']) && check_admin_referer('nescon_claude')) {
+        if (isset($_POST['nescon_claude_chave']) && !isset($_POST['nescon_testar']) && check_admin_referer('nescon_claude')) {
             foreach (['nescon_claude_chave', 'nescon_openai_chave'] as $campo) {
                 $chave = trim(sanitize_text_field(wp_unslash($_POST[$campo] ?? '')));
                 if ($chave !== '') {
@@ -62,6 +98,17 @@ add_action('admin_menu', static function (): void {
                 }
             }
             echo '<div class="notice notice-success"><p>Chaves salvas.</p></div>';
+        }
+        // Ao salvar ou ao clicar em "Testar conexão", confere as duas chaves.
+        if ((isset($_POST['nescon_claude_chave']) || isset($_POST['nescon_testar'])) && check_admin_referer('nescon_claude')) {
+            foreach (nescon_testar_chaves() as $nome => [$ok, $mensagem]) {
+                printf(
+                    '<div class="notice notice-%s"><p><strong>%s:</strong> %s</p></div>',
+                    $ok ? 'success' : 'error',
+                    esc_html($nome),
+                    esc_html(($ok ? '✓ ' : '✗ ') . $mensagem),
+                );
+            }
         }
         $atual = nescon_claude_chave();
         $openai = nescon_openai_chave();
@@ -75,8 +122,11 @@ add_action('admin_menu', static function (): void {
             '<p><label for="nescon_openai_chave">Chave da API da OpenAI (imagens)</label><br><input type="password" id="nescon_openai_chave" name="nescon_openai_chave" class="regular-text" autocomplete="off" placeholder="%s"><br><span class="description">Opcional. Com ela, cada artigo ganha uma ilustração nova no estilo do site. Crie em platform.openai.com, em <em>API keys</em>. Sem ela, o artigo usa a foto do serviço relacionado.</span></p>',
             esc_attr($openai !== '' ? 'Configurada (termina em ' . substr($openai, -4) . '). Preencha só para trocar.' : 'sk-...'),
         );
-        submit_button('Salvar chaves');
-        echo '</form></div>';
+        echo '<p class="submit">';
+        submit_button('Salvar chaves', 'primary', 'submit', false);
+        echo ' ';
+        submit_button('Testar conexão', 'secondary', 'nescon_testar', false);
+        echo '</p></form></div>';
     });
 });
 
