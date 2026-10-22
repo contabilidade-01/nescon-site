@@ -200,6 +200,44 @@ function nescon_artigo_partes(string $html): array
     return ['corpo' => trim($html), 'indice' => $indice, 'faq' => array_filter($faq, static fn ($f) => $f['pergunta'] !== '')];
 }
 
+/**
+ * Link interno só fica clicável se a página existir e estiver publicada; se
+ * não, vira texto comum. Assim um artigo que cita um rascunho não leva o
+ * leitor a um erro, e o link aparece sozinho quando o rascunho for publicado.
+ */
+function nescon_links_publicados(string $html): string
+{
+    return (string) preg_replace_callback('#<a\s[^>]*href="([^"]*)"[^>]*>(.*?)</a>#is', static function (array $m): string {
+        $url = html_entity_decode($m[1]);
+        $host = (string) wp_parse_url($url, PHP_URL_HOST);
+        if ($url === '' || str_starts_with($url, '#') || str_starts_with($url, 'mailto:') || str_starts_with($url, 'tel:')
+            || ($host !== '' && $host !== wp_parse_url(home_url(), PHP_URL_HOST))) {
+            return $m[0];
+        }
+        $caminho = trim((string) wp_parse_url($url, PHP_URL_PATH), '/');
+        if ($caminho === '' || nescon_pagina_publicada($caminho)) {
+            return $m[0];
+        }
+
+        return $m[2];
+    }, $html);
+}
+
+function nescon_pagina_publicada(string $caminho): bool
+{
+    static $vistos = [];
+    if (isset($vistos[$caminho])) {
+        return $vistos[$caminho];
+    }
+    $estatico = get_template_directory() . '/static/' . $caminho;
+    if (!str_contains($caminho, '..') && (is_file($estatico . '.html') || is_file($estatico . '/index.html'))) {
+        return $vistos[$caminho] = true;
+    }
+    $pagina = get_page_by_path($caminho, OBJECT, ['page', 'post']);
+
+    return $vistos[$caminho] = $pagina instanceof WP_Post && 'publish' === $pagina->post_status;
+}
+
 /** Miolo (<main>) do artigo, com a mesma marcação dos artigos estáticos. */
 function nescon_artigo_main(WP_Post $post, string $conteudo, string $cta_final): string
 {
@@ -233,7 +271,7 @@ function nescon_artigo_main(WP_Post $post, string $conteudo, string $cta_final):
         }
         $html .= '</ol></nav>';
     }
-    $html .= '<div class="prose prose-slate prose-headings:text-marinho-900 prose-a:text-destaque-700 prose-table:text-sm mt-8 max-w-none">' . $partes['corpo'] . '</div>';
+    $html .= '<div class="prose prose-slate prose-headings:text-marinho-900 prose-a:text-destaque-700 prose-table:text-sm mt-8 max-w-none">' . nescon_links_publicados($partes['corpo']) . '</div>';
 
     $slug_servico = (string) get_post_meta($post->ID, 'nescon_servico', true);
     $servico = nescon_artigo_servicos()[$slug_servico] ?? null;

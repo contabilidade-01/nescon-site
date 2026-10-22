@@ -60,8 +60,11 @@ classes ou estilos próprios, sem imagens e sem scripts: o visual vem do tema.
 
 Links internos são bem-vindos quando ajudam o leitor, com caminho relativo:
 `/abrir-empresa`, `/contabilidade-simples-nacional`, `/regularizacao-mei`,
-`/trocar-de-contador`, `/contabilidade-em-guarulhos`, `/contato` e os outros
-artigos em `/blog/endereco-do-artigo`.
+`/trocar-de-contador`, `/contabilidade-em-guarulhos`, `/contato` e os artigos
+publicados da lista do pedido, em `/blog/endereco-do-artigo`. Não invente
+endereços nem coloque link para artigo ainda em produção. Se um link interno
+apontar para uma página que não existe ou não está publicada, o tema mostra só
+o texto, sem link.
 
 ## Campos do artigo
 
