@@ -27,7 +27,7 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 - **Pedir artigo** (menu do wp-admin): escreva o tema e, se quiser,
   orientações. O Claude escreve no padrão de
   [`guia-de-estilo.md`](../wp-content/themes/nescon-site/guia-de-estilo.md),
-  confere números em sites gov.br e deixa um rascunho em `/blog` em 2 a 5
+  confere normas, números e prazos em sites oficiais (gov.br e leg.br) e deixa um rascunho em `/blog` em 2 a 5
   minutos. A tela se atualiza sozinha.
 - **Pedir ajuste**: na mesma lista, escreva o que mudar no rascunho.
 - **Gerar outra imagem**: na mesma lista, opcionalmente descrevendo a cena.
@@ -40,7 +40,7 @@ Para mudar o padrão dos artigos, edite o `guia-de-estilo.md` do tema.
 
 A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Em
 **Acompanhar**, cada pedido mostra ao vivo o que está acontecendo, com horário:
-fila, início da tarefa, cada pesquisa do Claude no gov.br e as páginas
+fila, início da tarefa, cada pesquisa do Claude em sites oficiais e as páginas
 encontradas, quantas palavras já foram escritas, texto salvo, imagem da OpenAI
 e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
 novidade. Se o servidor encerrar a tarefa no meio, o pedido vira erro com o

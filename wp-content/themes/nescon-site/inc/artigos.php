@@ -61,7 +61,7 @@ add_action('init', static function (): void {
     add_post_type_support('page', 'excerpt');
 
     $auth = static fn (): bool => current_user_can('edit_pages');
-    foreach (['nescon_categoria', 'nescon_servico', 'nescon_descricao'] as $meta) {
+    foreach (['nescon_categoria', 'nescon_servico', 'nescon_descricao', 'nescon_chamada_titulo', 'nescon_chamada_texto'] as $meta) {
         register_post_meta('page', $meta, [
             'type' => 'string',
             'single' => true,
@@ -238,7 +238,10 @@ function nescon_artigo_main(WP_Post $post, string $conteudo, string $cta_final):
     $slug_servico = (string) get_post_meta($post->ID, 'nescon_servico', true);
     $servico = nescon_artigo_servicos()[$slug_servico] ?? null;
     if ($servico) {
-        $html .= '<div class="mt-12 rounded-2xl bg-marinho-800 p-6 text-white"><p class="text-lg font-bold">' . esc_html($servico['chamada']) . '</p><p class="mt-2 text-marinho-100">' . esc_html($servico['texto']) . '</p><div class="mt-5 flex flex-col gap-3 sm:flex-row"><button type="button" data-abrir-chat class="btn-primario">Fale com um contador</button><a href="/' . esc_attr($slug_servico) . '" class="btn-claro">Conheça o serviço</a></div></div>';
+        // Chamada escrita para o tema do artigo; sem ela, a padrão do serviço.
+        $chamada = (string) get_post_meta($post->ID, 'nescon_chamada_titulo', true) ?: $servico['chamada'];
+        $chamada_texto = (string) get_post_meta($post->ID, 'nescon_chamada_texto', true) ?: $servico['texto'];
+        $html .= '<div class="mt-12 rounded-2xl bg-marinho-800 p-6 text-white"><p class="text-lg font-bold">' . esc_html($chamada) . '</p><p class="mt-2 text-marinho-100">' . esc_html($chamada_texto) . '</p><div class="mt-5 flex flex-col gap-3 sm:flex-row"><button type="button" data-abrir-chat class="btn-primario">Fale com um contador</button><a href="/' . esc_attr($slug_servico) . '" class="btn-claro">Conheça o serviço</a></div></div>';
     }
     $html .= '</article>';
 
@@ -436,7 +439,9 @@ add_action('add_meta_boxes_page', static function (WP_Post $post): void {
             printf('<option value="%s"%s>%s</option>', esc_attr($slug), selected($servico, $slug, false), esc_html($s['titulo']));
         }
         printf(
-            '</select></p><p><label for="nescon_descricao"><strong>Descrição para o Google</strong> (até 170 caracteres)</label><br><textarea id="nescon_descricao" name="nescon_descricao" maxlength="170" rows="4" style="width:100%%">%s</textarea></p><p class="description">O "Resumo" da página aparece como "Resposta rápida". Perguntas frequentes: use blocos "Detalhes".</p>',
+            '</select></p><p><label for="nescon_chamada_titulo"><strong>Chamada do fim do artigo</strong></label><br><input type="text" id="nescon_chamada_titulo" name="nescon_chamada_titulo" value="%s" style="width:100%%" placeholder="Vazio: usa a do serviço"></p><p><textarea id="nescon_chamada_texto" name="nescon_chamada_texto" rows="3" style="width:100%%" placeholder="Texto da chamada">%s</textarea></p><p><label for="nescon_descricao"><strong>Descrição para o Google</strong> (até 155 caracteres)</label><br><textarea id="nescon_descricao" name="nescon_descricao" maxlength="170" rows="4" style="width:100%%">%s</textarea></p><p class="description">O "Resumo" da página aparece como "Resposta rápida". Perguntas frequentes: use blocos "Detalhes".</p>',
+            esc_attr((string) get_post_meta($post->ID, 'nescon_chamada_titulo', true)),
+            esc_textarea((string) get_post_meta($post->ID, 'nescon_chamada_texto', true)),
             esc_textarea($descricao),
         );
     }, null, 'side', 'high');
@@ -446,7 +451,7 @@ add_action('save_post_page', static function (int $id): void {
     if (!isset($_POST['nescon_artigo_nonce']) || !wp_verify_nonce(sanitize_key($_POST['nescon_artigo_nonce']), 'nescon_artigo') || !current_user_can('edit_post', $id)) {
         return;
     }
-    foreach (['nescon_categoria', 'nescon_servico', 'nescon_descricao'] as $campo) {
+    foreach (['nescon_categoria', 'nescon_servico', 'nescon_descricao', 'nescon_chamada_titulo', 'nescon_chamada_texto'] as $campo) {
         update_post_meta($id, $campo, sanitize_text_field(wp_unslash($_POST[$campo] ?? '')));
     }
 });
