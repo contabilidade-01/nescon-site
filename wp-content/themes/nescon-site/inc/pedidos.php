@@ -166,11 +166,55 @@ function nescon_pedido_status_texto(WP_Post $p): string
     };
 }
 
+/**
+ * Registro do andamento de cada pedido, mostrado ao vivo na tela "Pedir
+ * artigo": dá para ver se o Claude e a OpenAI estão trabalhando ou se a
+ * tarefa parou.
+ */
+function nescon_pedido_registrar(int $id, string $texto, bool $novo = false): void
+{
+    $registro = $novo ? [] : (array) get_post_meta($id, 'nescon_pedido_registro', true);
+    $registro[] = [time(), $texto];
+    update_post_meta($id, 'nescon_pedido_registro', array_slice(array_filter($registro), -40));
+}
+
+function nescon_pedido_registro_html(int $id): string
+{
+    $registro = array_filter((array) get_post_meta($id, 'nescon_pedido_registro', true));
+    if (!$registro) {
+        return '';
+    }
+    $html = '<ol class="nescon-registro">';
+    foreach ($registro as [$quando, $texto]) {
+        $html .= '<li><time>' . esc_html(wp_date('H:i:s', (int) $quando)) . '</time> ' . esc_html($texto) . '</li>';
+    }
+    $html .= '</ol>';
+    $status = (string) get_post_meta($id, 'nescon_pedido_status', true);
+    if (in_array($status, ['fila', 'escrevendo'], true)) {
+        $html .= sprintf('<p class="nescon-ativo" data-desde="%d">Última atividade há <span>…</span></p>', (int) end($registro)[0]);
+    }
+
+    return $html;
+}
+
+/* A tela consulta o andamento a cada 5 segundos, sem recarregar a página. */
+add_action('wp_ajax_nescon_pedido_registro', static function (): void {
+    check_ajax_referer('nescon_pedido_registro');
+    $resposta = [];
+    foreach (array_map('intval', (array) ($_GET['ids'] ?? [])) as $id) {
+        if (current_user_can('edit_post', $id)) {
+            $resposta[$id] = ['status' => (string) get_post_meta($id, 'nescon_pedido_status', true), 'html' => nescon_pedido_registro_html($id)];
+        }
+    }
+    wp_send_json($resposta);
+});
+
 function nescon_pedido_agendar(int $id, string $ajuste = ''): void
 {
     update_post_meta($id, 'nescon_pedido_status', 'fila');
     update_post_meta($id, 'nescon_pedido_inicio', time());
     delete_post_meta($id, 'nescon_pedido_erro');
+    nescon_pedido_registrar($id, $ajuste !== '' ? 'Ajuste na fila, esperando o agendador do WordPress' : 'Pedido na fila, esperando o agendador do WordPress', true);
     wp_schedule_single_event(time(), NESCON_PEDIDO_EVENTO, [$id, $ajuste, wp_generate_password(6, false)]);
     spawn_cron();
 }
@@ -227,6 +271,7 @@ function nescon_pedidos_tela(): void
             }
             update_post_meta($id, 'nescon_pedido_status', 'fila');
             update_post_meta($id, 'nescon_pedido_inicio', time());
+            nescon_pedido_registrar($id, 'Imagem nova na fila, esperando o agendador do WordPress', true);
             wp_schedule_single_event(time(), 'nescon_refazer_imagem', [$id, wp_generate_password(6, false)]);
             spawn_cron();
             $aviso = 'Imagem nova pedida. Aparece em cerca de um minuto.';
@@ -244,9 +289,11 @@ function nescon_pedidos_tela(): void
     $andamento = array_filter($pedidos, static fn (WP_Post $p): bool => in_array(get_post_meta($p->ID, 'nescon_pedido_status', true), ['fila', 'escrevendo'], true));
 
     echo '<div class="wrap"><h1>Pedir artigo</h1>';
+    echo '<style>.nescon-registro{margin:.5em 0 0 1.5em;font-size:12px;color:#50575e}.nescon-registro li{margin:0}.nescon-registro time{font-variant-numeric:tabular-nums;color:#8c8f94}.nescon-ativo{margin:.3em 0 0;font-size:12px;color:#2271b1}.nescon-ativo.parado{color:#b32d2e}</style>';
     if ($andamento) {
-        // Atualiza a tela sozinha enquanto houver artigo sendo escrito.
-        echo '<meta http-equiv="refresh" content="20">';
+        // Sem JavaScript, a tela ainda se atualiza sozinha a cada 20 segundos.
+        echo '<noscript><meta http-equiv="refresh" content="20"></noscript>';
+        nescon_pedidos_script(array_map(static fn (WP_Post $p): int => $p->ID, array_values($andamento)));
     }
     if ($aviso !== '') {
         echo '<div class="notice notice-success"><p>' . esc_html($aviso) . '</p></div>';
@@ -279,6 +326,11 @@ function nescon_pedidos_tela(): void
         $aviso_pedido = (string) get_post_meta($p->ID, 'nescon_pedido_aviso', true);
         if ('pronto' === $status && $aviso_pedido !== '') {
             echo '<br><small style="color:#b32d2e">' . esc_html($aviso_pedido) . '</small>';
+        }
+        $registro = nescon_pedido_registro_html($p->ID);
+        if ($registro !== '') {
+            $aberto = in_array($status, ['fila', 'escrevendo', 'erro'], true) ? ' open' : '';
+            printf('<details%s><summary>Acompanhar</summary><div id="nescon-registro-%d">%s</div></details>', $aberto, $p->ID, $registro);
         }
         $pontos = (array) get_post_meta($p->ID, 'nescon_pedido_pontos', true);
         if ('pronto' === $status && 'publish' !== $p->post_status && array_filter($pontos)) {
@@ -323,6 +375,41 @@ function nescon_pedidos_tela(): void
         echo '</td></tr>';
     }
     echo '</tbody></table></div>';
+}
+
+/** Atualiza o andamento dos pedidos em produção e recarrega a tela quando um termina. */
+function nescon_pedidos_script(array $ids): void
+{
+    $config = wp_json_encode([
+        'url' => add_query_arg(['action' => 'nescon_pedido_registro', '_ajax_nonce' => wp_create_nonce('nescon_pedido_registro'), 'ids' => $ids], admin_url('admin-ajax.php')),
+    ]);
+    echo <<<HTML
+<script>
+(function (config) {
+  function relogio() {
+    document.querySelectorAll('.nescon-ativo').forEach(function (el) {
+      var s = Math.max(0, Math.round(Date.now() / 1000 - el.dataset.desde));
+      el.querySelector('span').textContent = s < 60 ? s + ' s' : Math.floor(s / 60) + ' min ' + (s % 60) + ' s';
+      el.classList.toggle('parado', s > 360);
+    });
+  }
+  function consultar() {
+    fetch(config.url, {credentials: 'same-origin'}).then(function (r) { return r.json(); }).then(function (dados) {
+      var terminou = false;
+      Object.keys(dados).forEach(function (id) {
+        var caixa = document.getElementById('nescon-registro-' + id);
+        if (caixa) { caixa.innerHTML = dados[id].html; }
+        if (['fila', 'escrevendo'].indexOf(dados[id].status) < 0) { terminou = true; }
+      });
+      if (terminou) { location.reload(); } else { relogio(); }
+    }).catch(function () {});
+  }
+  relogio();
+  setInterval(relogio, 1000);
+  setInterval(consultar, 5000);
+})({$config});
+</script>
+HTML;
 }
 
 /* Pontos de revisão também na tela de edição do artigo. */
@@ -425,12 +512,15 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
     if (!nescon_eh_artigo($post)) {
         return;
     }
+    $limite = (int) ini_get('max_execution_time');
     if (function_exists('set_time_limit')) {
         @set_time_limit(900);
     }
     ignore_user_abort(true);
     update_post_meta($id, 'nescon_pedido_status', 'escrevendo');
     update_post_meta($id, 'nescon_pedido_ultimo_ajuste', $ajuste);
+    nescon_pedido_registrar($id, 'Tarefa começou no servidor' . ($limite > 0 ? " (limite do PHP: {$limite} s)" : ''));
+    nescon_pedido_vigiar($id);
 
     try {
         if (nescon_claude_chave() === '') {
@@ -495,6 +585,8 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
 
         $mensagens = [['role' => 'user', 'content' => $pedido]];
         for ($i = 0; ; ++$i) {
+            nescon_pedido_registrar($id, 0 === $i ? 'Pedido enviado ao Claude. Ele pesquisa no gov.br e escreve (2 a 5 minutos)' : 'Claude continuando o trabalho');
+            $inicio = time();
             $resposta = nescon_claude([
                 'model' => NESCON_CLAUDE_MODELO,
                 'max_tokens' => 16000,
@@ -504,6 +596,13 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 'tools' => [['type' => 'web_search_20260209', 'name' => 'web_search', 'allowed_domains' => ['gov.br'], 'max_uses' => 5]],
                 'output_config' => ['effort' => 'high', 'format' => ['type' => 'json_schema', 'schema' => $esquema]],
             ]);
+            $buscas = [];
+            foreach ($resposta['content'] ?? [] as $bloco) {
+                if ('server_tool_use' === ($bloco['type'] ?? '') && 'web_search' === ($bloco['name'] ?? '')) {
+                    $buscas[] = '"' . ($bloco['input']['query'] ?? '') . '"';
+                }
+            }
+            nescon_pedido_registrar($id, sprintf('Claude respondeu em %d s', time() - $inicio) . ($buscas ? '. Pesquisou no gov.br: ' . implode(', ', $buscas) : ''));
             // A busca na web roda no servidor do Claude; uma pausa só pede para continuar.
             if ('pause_turn' === ($resposta['stop_reason'] ?? '') && $i < 5) {
                 $mensagens = [['role' => 'user', 'content' => $pedido], ['role' => 'assistant', 'content' => $resposta['content']]];
@@ -542,6 +641,7 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
         update_post_meta($id, 'nescon_imagem_cena', sanitize_text_field($artigo['imagem_cena']));
         update_post_meta($id, 'nescon_imagem_alt', sanitize_text_field($artigo['imagem_alt']));
         delete_post_meta($id, 'nescon_pedido_aviso');
+        nescon_pedido_registrar($id, sprintf('Texto salvo no rascunho (%d palavras)', str_word_count(wp_strip_all_tags($artigo['corpo_html']), 0, 'ÁÉÍÓÚÂÊÔÃÕÇáéíóúâêôãõç')));
 
         // Ilustração nova só quando o artigo ainda não tem imagem (ou foi pedida outra).
         if (nescon_openai_chave() !== '' && (!has_post_thumbnail($id) || get_post_meta($id, 'nescon_nova_imagem', true))) {
@@ -549,14 +649,45 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 nescon_gerar_imagem($id);
             } catch (Throwable $e) {
                 update_post_meta($id, 'nescon_pedido_aviso', 'Artigo pronto, mas a imagem não foi gerada: ' . $e->getMessage());
+                nescon_pedido_registrar($id, 'A imagem não foi gerada: ' . $e->getMessage());
             }
+        } elseif (nescon_openai_chave() === '') {
+            nescon_pedido_registrar($id, 'Sem chave da OpenAI: o artigo usa a foto do serviço');
         }
         delete_post_meta($id, 'nescon_nova_imagem');
         update_post_meta($id, 'nescon_pedido_status', 'pronto');
+        nescon_pedido_registrar($id, 'Pronto');
     } catch (Throwable $e) {
         update_post_meta($id, 'nescon_pedido_status', 'erro');
         update_post_meta($id, 'nescon_pedido_erro', $e->getMessage());
+        nescon_pedido_registrar($id, 'Erro: ' . $e->getMessage());
     }
+}
+
+/**
+ * Se o PHP for encerrado no meio (limite de tempo, falta de memória), deixa
+ * isso no registro e marca o pedido como erro, em vez de ficar "escrevendo".
+ */
+function nescon_pedido_vigiar(int $id): void
+{
+    $anotar = static function (?array $falha) use ($id): void {
+        if ('escrevendo' !== get_post_meta($id, 'nescon_pedido_status', true)) {
+            return;
+        }
+        $motivo = $falha && str_contains((string) $falha['message'], 'Maximum execution time')
+            ? 'o servidor encerrou a tarefa pelo limite de tempo do PHP'
+            : 'o servidor encerrou a tarefa no meio' . ($falha ? ' (' . $falha['message'] . ')' : '');
+        update_post_meta($id, 'nescon_pedido_status', 'erro');
+        update_post_meta($id, 'nescon_pedido_erro', $motivo);
+        nescon_pedido_registrar($id, 'Erro: ' . $motivo);
+    };
+    // O tratamento de erro fatal do WordPress encerra o PHP antes das outras rotinas de saída.
+    add_filter('wp_should_handle_php_error', static function ($tratar, $falha) use ($anotar) {
+        $anotar($falha);
+
+        return $tratar;
+    }, 10, 2);
+    register_shutdown_function(static fn () => $anotar(error_get_last()));
 }
 
 add_action(NESCON_PEDIDO_EVENTO, 'nescon_escrever_artigo', 10, 2);
@@ -564,12 +695,16 @@ add_action(NESCON_PEDIDO_EVENTO, 'nescon_escrever_artigo', 10, 2);
 add_action('nescon_refazer_imagem', static function (int $id): void {
     update_post_meta($id, 'nescon_pedido_status', 'escrevendo');
     delete_post_meta($id, 'nescon_pedido_aviso');
+    nescon_pedido_registrar($id, 'Tarefa começou no servidor');
+    nescon_pedido_vigiar($id);
     try {
         nescon_gerar_imagem($id);
     } catch (Throwable $e) {
         update_post_meta($id, 'nescon_pedido_aviso', 'A imagem não foi gerada: ' . $e->getMessage());
+        nescon_pedido_registrar($id, 'A imagem não foi gerada: ' . $e->getMessage());
     }
     update_post_meta($id, 'nescon_pedido_status', 'pronto');
+    nescon_pedido_registrar($id, 'Pronto');
 });
 
 /**
@@ -583,6 +718,8 @@ function nescon_gerar_imagem(int $id): void
     $prompt = 'Fotografia realista, estilo editorial corporativo, luz natural suave, cores sóbrias com toques de azul-marinho e verde, '
         . 'escritório de contabilidade moderno e acolhedor no Brasil, pessoas brasileiras reais e diversas, expressões naturais, profundidade de campo rasa. '
         . 'Cena: ' . $cena . ' Sem texto, letras, números legíveis, logotipos ou marcas d\'água.';
+    nescon_pedido_registrar($id, 'Pedindo a ilustração à OpenAI (cerca de 1 minuto)');
+    $inicio = time();
 
     $resposta = wp_remote_post('https://api.openai.com/v1/images/generations', [
         'timeout' => 180,
@@ -604,6 +741,7 @@ function nescon_gerar_imagem(int $id): void
     if (200 !== wp_remote_retrieve_response_code($resposta) || !$imagem) {
         throw new RuntimeException($dados['error']['message'] ?? 'HTTP ' . wp_remote_retrieve_response_code($resposta));
     }
+    nescon_pedido_registrar($id, sprintf('OpenAI entregou a imagem em %d s', time() - $inicio));
 
     require_once ABSPATH . 'wp-admin/includes/image.php';
     $nome = (get_post_field('post_name', $id) ?: 'artigo-' . $id) . '.webp';
