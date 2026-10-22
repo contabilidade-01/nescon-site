@@ -33,6 +33,15 @@ add_action('init', static function (): void {
     ]);
 });
 
+function nescon_openai_chave(): string
+{
+    if (defined('NESCON_OPENAI_API_KEY') && NESCON_OPENAI_API_KEY) {
+        return (string) NESCON_OPENAI_API_KEY;
+    }
+
+    return (string) get_option('nescon_openai_chave', '');
+}
+
 function nescon_claude_chave(): string
 {
     if (defined('NESCON_CLAUDE_API_KEY') && NESCON_CLAUDE_API_KEY) {
@@ -46,20 +55,27 @@ function nescon_claude_chave(): string
 add_action('admin_menu', static function (): void {
     add_options_page('Claude (artigos)', 'Claude (artigos)', 'manage_options', 'nescon-claude', static function (): void {
         if (isset($_POST['nescon_claude_chave']) && check_admin_referer('nescon_claude')) {
-            $chave = trim(sanitize_text_field(wp_unslash($_POST['nescon_claude_chave'])));
-            if ($chave !== '') {
-                update_option('nescon_claude_chave', $chave, false);
+            foreach (['nescon_claude_chave', 'nescon_openai_chave'] as $campo) {
+                $chave = trim(sanitize_text_field(wp_unslash($_POST[$campo] ?? '')));
+                if ($chave !== '') {
+                    update_option($campo, $chave, false);
+                }
             }
-            echo '<div class="notice notice-success"><p>Chave salva.</p></div>';
+            echo '<div class="notice notice-success"><p>Chaves salvas.</p></div>';
         }
         $atual = nescon_claude_chave();
+        $openai = nescon_openai_chave();
         echo '<div class="wrap"><h1>Claude (artigos)</h1><p>Chave da API do Claude usada em <strong>Pedir artigo</strong>. Crie em <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a>, em <em>API keys</em>.</p><form method="post">';
         wp_nonce_field('nescon_claude');
         printf(
             '<p><label for="nescon_claude_chave">Chave da API</label><br><input type="password" id="nescon_claude_chave" name="nescon_claude_chave" class="regular-text" autocomplete="off" placeholder="%s"></p>',
             esc_attr($atual !== '' ? 'Configurada (termina em ' . substr($atual, -4) . '). Preencha só para trocar.' : 'sk-ant-...'),
         );
-        submit_button('Salvar chave');
+        printf(
+            '<p><label for="nescon_openai_chave">Chave da API da OpenAI (imagens)</label><br><input type="password" id="nescon_openai_chave" name="nescon_openai_chave" class="regular-text" autocomplete="off" placeholder="%s"><br><span class="description">Opcional. Com ela, cada artigo ganha uma ilustração nova no estilo do site. Crie em platform.openai.com, em <em>API keys</em>. Sem ela, o artigo usa a foto do serviço relacionado.</span></p>',
+            esc_attr($openai !== '' ? 'Configurada (termina em ' . substr($openai, -4) . '). Preencha só para trocar.' : 'sk-...'),
+        );
+        submit_button('Salvar chaves');
         echo '</form></div>';
     });
 });
@@ -134,6 +150,21 @@ function nescon_pedidos_tela(): void
         }
     }
 
+    if (isset($_POST['nescon_nova_imagem']) && check_admin_referer('nescon_nova_imagem')) {
+        $id = (int) ($_POST['id'] ?? 0);
+        $cena = sanitize_textarea_field(wp_unslash($_POST['cena'] ?? ''));
+        if (current_user_can('edit_post', $id) && nescon_openai_chave() !== '') {
+            if ($cena !== '') {
+                update_post_meta($id, 'nescon_imagem_cena', $cena);
+            }
+            update_post_meta($id, 'nescon_pedido_status', 'fila');
+            update_post_meta($id, 'nescon_pedido_inicio', time());
+            wp_schedule_single_event(time(), 'nescon_refazer_imagem', [$id, wp_generate_password(6, false)]);
+            spawn_cron();
+            $aviso = 'Imagem nova pedida. Aparece em cerca de um minuto.';
+        }
+    }
+
     $pedidos = get_posts([
         'post_type' => 'page',
         'post_status' => ['draft', 'pending', 'publish'],
@@ -177,6 +208,10 @@ function nescon_pedidos_tela(): void
 
         echo '<tr><td><strong>' . esc_html(get_the_title($p)) . '</strong><br><small>Pedido: ' . esc_html((string) get_post_meta($p->ID, 'nescon_pedido_tema', true)) . '</small></td>';
         echo '<td>' . esc_html($parado ? 'Demorou mais que o normal' : nescon_pedido_status_texto($p));
+        $aviso_pedido = (string) get_post_meta($p->ID, 'nescon_pedido_aviso', true);
+        if ('pronto' === $status && $aviso_pedido !== '') {
+            echo '<br><small style="color:#b32d2e">' . esc_html($aviso_pedido) . '</small>';
+        }
         $pontos = (array) get_post_meta($p->ID, 'nescon_pedido_pontos', true);
         if ('pronto' === $status && 'publish' !== $p->post_status && array_filter($pontos)) {
             echo '<details><summary>Pontos para o contador conferir</summary><ul style="list-style:disc;margin-left:1.5em">';
@@ -198,6 +233,17 @@ function nescon_pedidos_tela(): void
                 printf('<input type="hidden" name="id" value="%d"><textarea name="ajuste" rows="2" class="large-text" placeholder="O que mudar? Ex.: deixar a resposta rápida mais curta"></textarea>', $p->ID);
                 submit_button('Pedir ajuste', 'secondary small', 'nescon_ajuste', false);
                 echo '</form>';
+                if (nescon_openai_chave() !== '') {
+                    echo '<details style="margin-top:.5em"><summary>Gerar outra imagem</summary><form method="post">';
+                    wp_nonce_field('nescon_nova_imagem');
+                    printf(
+                        '<input type="hidden" name="id" value="%d"><textarea name="cena" rows="2" class="large-text" placeholder="%s"></textarea>',
+                        $p->ID,
+                        esc_attr('Opcional: descreva a cena. Atual: ' . get_post_meta($p->ID, 'nescon_imagem_cena', true)),
+                    );
+                    submit_button('Gerar outra imagem', 'secondary small', 'nescon_nova_imagem', false);
+                    echo '</form></details>';
+                }
             }
         } elseif ('erro' === $status || $parado) {
             echo '<form method="post">';
@@ -234,12 +280,15 @@ function nescon_artigo_exemplo(string $slug): array
     preg_match('#aria-label="Resposta rápida">.*?<p class="mt-2[^>]*>(.*?)</p>#s', $html, $resumo);
     preg_match('#<div class="prose[^>]*>(.*?)</div><div class="mt-12#s', $html, $corpo);
     preg_match_all('#<h3 class="text-base">(.*?)</h3>.*?<p class="mt-3[^>]*>(.*?)</p>#s', $html, $faq, PREG_SET_ORDER);
+    preg_match('#<img[^>]*fetchpriority="high"[^>]*>#', $html, $img);
+    preg_match('#alt="([^"]*)"#', $img[0] ?? '', $alt);
 
     return [
         'titulo' => html_entity_decode(wp_strip_all_tags($titulo[1] ?? '')),
         'resumo' => html_entity_decode(wp_strip_all_tags($resumo[1] ?? '')),
         'corpo_html' => trim((string) preg_replace('#<h2 id="[^"]*">#', '<h2>', $corpo[1] ?? '')),
         'faq' => array_map(static fn ($f) => ['pergunta' => html_entity_decode($f[1]), 'resposta' => html_entity_decode(wp_strip_all_tags($f[2]))], $faq),
+        'imagem_alt' => html_entity_decode($alt[1] ?? ''),
     ];
 }
 
@@ -364,13 +413,15 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                         'additionalProperties' => false,
                     ],
                 ],
+                'imagem_cena' => ['type' => 'string', 'description' => 'Cena da ilustração do artigo, conforme o guia: pessoas, ambiente, ação e objetos que remetem ao tema'],
+                'imagem_alt' => ['type' => 'string', 'description' => 'Texto alternativo da ilustração, descrevendo objetivamente a cena'],
                 'pontos_de_revisao' => [
                     'type' => 'array',
                     'items' => ['type' => 'string'],
                     'description' => 'Números, prazos e afirmações que o contador deve conferir antes de publicar, com a fonte usada',
                 ],
             ],
-            'required' => ['titulo', 'slug', 'resumo', 'descricao', 'categoria', 'servico', 'corpo_html', 'faq', 'pontos_de_revisao'],
+            'required' => ['titulo', 'slug', 'resumo', 'descricao', 'categoria', 'servico', 'corpo_html', 'faq', 'imagem_cena', 'imagem_alt', 'pontos_de_revisao'],
             'additionalProperties' => false,
         ];
 
@@ -419,6 +470,19 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
         update_post_meta($id, 'nescon_categoria', sanitize_text_field($artigo['categoria']));
         update_post_meta($id, 'nescon_servico', sanitize_key($artigo['servico']));
         update_post_meta($id, 'nescon_pedido_pontos', array_map('sanitize_text_field', $artigo['pontos_de_revisao']));
+        update_post_meta($id, 'nescon_imagem_cena', sanitize_text_field($artigo['imagem_cena']));
+        update_post_meta($id, 'nescon_imagem_alt', sanitize_text_field($artigo['imagem_alt']));
+        delete_post_meta($id, 'nescon_pedido_aviso');
+
+        // Ilustração nova só quando o artigo ainda não tem imagem (ou foi pedida outra).
+        if (nescon_openai_chave() !== '' && (!has_post_thumbnail($id) || get_post_meta($id, 'nescon_nova_imagem', true))) {
+            try {
+                nescon_gerar_imagem($id);
+            } catch (Throwable $e) {
+                update_post_meta($id, 'nescon_pedido_aviso', 'Artigo pronto, mas a imagem não foi gerada: ' . $e->getMessage());
+            }
+        }
+        delete_post_meta($id, 'nescon_nova_imagem');
         update_post_meta($id, 'nescon_pedido_status', 'pronto');
     } catch (Throwable $e) {
         update_post_meta($id, 'nescon_pedido_status', 'erro');
@@ -427,6 +491,71 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
 }
 
 add_action(NESCON_PEDIDO_EVENTO, 'nescon_escrever_artigo', 10, 2);
+
+add_action('nescon_refazer_imagem', static function (int $id): void {
+    update_post_meta($id, 'nescon_pedido_status', 'escrevendo');
+    delete_post_meta($id, 'nescon_pedido_aviso');
+    try {
+        nescon_gerar_imagem($id);
+    } catch (Throwable $e) {
+        update_post_meta($id, 'nescon_pedido_aviso', 'A imagem não foi gerada: ' . $e->getMessage());
+    }
+    update_post_meta($id, 'nescon_pedido_status', 'pronto');
+});
+
+/**
+ * Cria a ilustração do artigo com a API de imagens da OpenAI, no estilo das
+ * fotos do site, e a define como imagem destacada (com texto alternativo).
+ */
+function nescon_gerar_imagem(int $id): void
+{
+    $cena = (string) get_post_meta($id, 'nescon_imagem_cena', true);
+    $alt = (string) get_post_meta($id, 'nescon_imagem_alt', true);
+    $prompt = 'Fotografia realista, estilo editorial corporativo, luz natural suave, cores sóbrias com toques de azul-marinho e verde, '
+        . 'escritório de contabilidade moderno e acolhedor no Brasil, pessoas brasileiras reais e diversas, expressões naturais, profundidade de campo rasa. '
+        . 'Cena: ' . $cena . ' Sem texto, letras, números legíveis, logotipos ou marcas d\'água.';
+
+    $resposta = wp_remote_post('https://api.openai.com/v1/images/generations', [
+        'timeout' => 180,
+        'headers' => ['Authorization' => 'Bearer ' . nescon_openai_chave(), 'Content-Type' => 'application/json'],
+        'body' => wp_json_encode([
+            'model' => 'gpt-image-1',
+            'prompt' => $prompt,
+            'size' => '1536x1024',
+            'quality' => 'medium',
+            'output_format' => 'webp',
+            'n' => 1,
+        ]),
+    ]);
+    if (is_wp_error($resposta)) {
+        throw new RuntimeException('falha de conexão (' . $resposta->get_error_message() . ')');
+    }
+    $dados = json_decode((string) wp_remote_retrieve_body($resposta), true);
+    $imagem = base64_decode((string) ($dados['data'][0]['b64_json'] ?? ''), true);
+    if (200 !== wp_remote_retrieve_response_code($resposta) || !$imagem) {
+        throw new RuntimeException($dados['error']['message'] ?? 'HTTP ' . wp_remote_retrieve_response_code($resposta));
+    }
+
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    $nome = (get_post_field('post_name', $id) ?: 'artigo-' . $id) . '.webp';
+    $arquivo = wp_upload_bits($nome, null, $imagem);
+    if (!empty($arquivo['error'])) {
+        throw new RuntimeException($arquivo['error']);
+    }
+    $anexo = wp_insert_attachment([
+        'post_mime_type' => 'image/webp',
+        'post_title' => get_the_title($id),
+        'post_status' => 'inherit',
+    ], $arquivo['file'], $id);
+    wp_update_attachment_metadata($anexo, wp_generate_attachment_metadata($anexo, $arquivo['file']));
+    update_post_meta($anexo, '_wp_attachment_image_alt', $alt);
+
+    $anterior = get_post_thumbnail_id($id);
+    set_post_thumbnail($id, $anexo);
+    if ($anterior && (int) get_post_field('post_parent', $anterior) === $id) {
+        wp_delete_attachment($anterior, true);
+    }
+}
 
 /* Mantém as caixinhas do "Checklist rápido" quando quem salva não é administrador. */
 add_filter('wp_kses_allowed_html', static function (array $tags, $contexto): array {

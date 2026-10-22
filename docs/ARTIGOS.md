@@ -7,7 +7,11 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 1. Crie uma chave da API em https://platform.claude.com, em **API keys**.
 2. No wp-admin, em **Configurações > Claude (artigos)**, cole a chave e salve.
    (Ou defina `NESCON_CLAUDE_API_KEY` no `wp-config.php`.)
-3. Em **Usuários > Adicionar novo**, crie o usuário de quem vai pedir artigos
+3. Para cada artigo ganhar uma ilustração própria, crie também uma chave em
+   https://platform.openai.com (**API keys**) e cole no campo de imagens da
+   mesma tela (ou `NESCON_OPENAI_API_KEY`). Sem ela, o artigo usa a foto do
+   serviço relacionado.
+4. Em **Usuários > Adicionar novo**, crie o usuário de quem vai pedir artigos
    com a função **Redator(a)**: pede artigos, edita rascunhos e envia para
    revisão, mas não publica.
 
@@ -19,6 +23,8 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
   confere números em sites gov.br e deixa um rascunho em `/blog` em 2 a 5
   minutos. A tela se atualiza sozinha.
 - **Pedir ajuste**: na mesma lista, escreva o que mudar no rascunho.
+- **Gerar outra imagem**: na mesma lista, opcionalmente descrevendo a cena.
+  A imagem fica como "Imagem destacada", com texto alternativo.
 - **Publicar** (contador): abra **Editar**, confira a caixa
   "Conferir antes de publicar" e clique em **Publicar**. O tema monta a página
   no visual do site e inclui o artigo no `/blog`, no sitemap e no `llms.txt`.
