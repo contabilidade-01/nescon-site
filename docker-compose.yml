@@ -14,6 +14,12 @@ services:
       WORDPRESS_ADMIN_USER: "${WP_ADMIN_USER:?defina WP_ADMIN_USER}"
       WORDPRESS_ADMIN_PASSWORD: "${WP_ADMIN_PASSWORD:?defina WP_ADMIN_PASSWORD}"
       WORDPRESS_ADMIN_EMAIL: "${WP_ADMIN_EMAIL:?defina WP_ADMIN_EMAIL}"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_SECURE: "${SMTP_SECURE:-tls}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_FROM: "${SMTP_FROM:-}"
     volumes:
       - wp_data:/var/www/html
     ports:
