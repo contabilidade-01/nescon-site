@@ -32,6 +32,8 @@ contábil, adaptada com identidade visual e conteúdo próprios da Nescon.
 - `docs/DEPLOY_EASYPANEL.md` — deploy em VPS Hostinger com EasyPanel
   (Docker), incluindo domínio/SSL e variáveis de ambiente.
 - `docs/INSTALL.md` — instalação via Composer em um servidor tradicional.
+- `docs/STATUS.md` — situação atual do projeto, problemas em aberto e
+  pendências (comece por aqui ao retomar o trabalho).
 
 ## Início rápido (local, com Docker)
 
