@@ -650,7 +650,7 @@ function nescon_claude(array $corpo, int $id): array
                     $entrada = $parcial[$i] !== '' ? json_decode($parcial[$i], true) : (array) ($blocos[$i]['input'] ?? []);
                     $blocos[$i]['input'] = $entrada ?: new stdClass();
                     if ('web_search' === ($blocos[$i]['name'] ?? '')) {
-                        nescon_pedido_registrar($id, 'Pesquisando no gov.br: "' . ($entrada['query'] ?? '') . '"');
+                        nescon_pedido_registrar($id, 'Pesquisando em sites oficiais: "' . ($entrada['query'] ?? '') . '"');
                     }
                 }
                 break;
@@ -741,7 +741,7 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
 
         $guia = (string) file_get_contents(get_template_directory() . '/guia-de-estilo.md');
         $exemplo = wp_json_encode(['categoria' => 'Gestão', 'servico' => 'contabilidade-simples-nacional'] + nescon_artigo_exemplo(NESCON_ARTIGO_MODELO), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $sistema = "Você escreve e ajusta artigos do blog da Nescon Contabilidade, escritório de contabilidade em Guarulhos (SP). Siga sempre o guia de estilo abaixo e use a busca na web (só sites gov.br) para confirmar números, prazos e regras.\n\n<guia_de_estilo>\n{$guia}\n</guia_de_estilo>\n\nArtigo publicado do site, como exemplo do padrão (mesmos campos que você deve devolver):\n<artigo_exemplo>\n{$exemplo}\n</artigo_exemplo>";
+        $sistema = "Você escreve e ajusta artigos do blog da Nescon Contabilidade, escritório de contabilidade em Guarulhos (SP). Siga sempre o guia de estilo abaixo e use a busca na web (só sites oficiais gov.br e leg.br) para confirmar a situação atual das normas, números, prazos e regras.\n\n<guia_de_estilo>\n{$guia}\n</guia_de_estilo>\n\nArtigo publicado do site, como exemplo do padrão (mesmos campos que você deve devolver):\n<artigo_exemplo>\n{$exemplo}\n</artigo_exemplo>";
 
         if ($ajuste !== '' && trim($post->post_content) !== '') {
             preg_match_all('#<details[^>]*>\s*<summary[^>]*>(.*?)</summary>(.*?)</details>#s', $post->post_content, $m, PREG_SET_ORDER);
@@ -752,10 +752,12 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 'descricao' => get_post_meta($id, 'nescon_descricao', true),
                 'categoria' => get_post_meta($id, 'nescon_categoria', true),
                 'servico' => get_post_meta($id, 'nescon_servico', true),
+                'chamada_titulo' => get_post_meta($id, 'nescon_chamada_titulo', true),
+                'chamada_texto' => get_post_meta($id, 'nescon_chamada_texto', true),
                 'corpo_html' => trim((string) preg_replace(['#<!-- /?wp:details -->#', '#<details.*?</details>#s', '#<h2[^>]*>\s*Perguntas frequentes\s*</h2>#i'], '', $post->post_content)),
                 'faq' => array_map(static fn ($f) => ['pergunta' => html_entity_decode(wp_strip_all_tags($f[1])), 'resposta' => html_entity_decode(trim(wp_strip_all_tags($f[2])))], $m),
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-            $pedido = "Ajuste o rascunho abaixo conforme o pedido. Mude só o que o pedido exige e mantenha o resto como está, no padrão do guia.\n\nPedido de ajuste:\n<pedido>\n{$ajuste}\n</pedido>\n\nRascunho atual:\n<rascunho>\n{$atual}\n</rascunho>";
+            $pedido = "Ajuste o rascunho abaixo conforme o pedido. Mude só o que o pedido exige e mantenha o resto como está, no padrão do guia. Data de hoje: " . wp_date('d/m/Y') . ".\n\nPedido de ajuste:\n<pedido>\n{$ajuste}\n</pedido>\n\nRascunho atual:\n<rascunho>\n{$atual}\n</rascunho>";
         } else {
             $orientacoes = (string) get_post_meta($id, 'nescon_pedido_orientacoes', true);
             $pedido = 'Tema do novo artigo: ' . get_post_meta($id, 'nescon_pedido_tema', true)
@@ -770,9 +772,11 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 'titulo' => ['type' => 'string', 'description' => 'Título do artigo'],
                 'slug' => ['type' => 'string', 'description' => 'Endereço curto: letras minúsculas sem acento, números e hífens'],
                 'resumo' => ['type' => 'string', 'description' => 'Resposta rápida: 2 ou 3 frases que respondem ao título'],
-                'descricao' => ['type' => 'string', 'description' => 'Descrição para o Google, até 170 caracteres'],
+                'descricao' => ['type' => 'string', 'description' => 'Descrição para o Google, até 155 caracteres, com a palavra-chave e uma informação concreta'],
                 'categoria' => ['type' => 'string', 'enum' => nescon_artigo_categorias()],
                 'servico' => ['type' => 'string', 'enum' => array_keys(nescon_artigo_servicos()), 'description' => 'Serviço chamado no fim do artigo'],
+                'chamada_titulo' => ['type' => 'string', 'description' => 'Título da chamada do fim do artigo: pergunta curta ligada ao problema do leitor'],
+                'chamada_texto' => ['type' => 'string', 'description' => '1 ou 2 frases sobre como a Nescon ajuda nesse caso'],
                 'corpo_html' => ['type' => 'string', 'description' => 'Corpo do artigo em HTML, só com as tags permitidas no guia, terminando com a nota de revisão'],
                 'faq' => [
                     'type' => 'array',
@@ -791,7 +795,7 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                     'description' => 'Números, prazos e afirmações que o contador deve conferir antes de publicar, com a fonte usada',
                 ],
             ],
-            'required' => ['titulo', 'slug', 'resumo', 'descricao', 'categoria', 'servico', 'corpo_html', 'faq', 'imagem_cena', 'imagem_alt', 'pontos_de_revisao'],
+            'required' => ['titulo', 'slug', 'resumo', 'descricao', 'categoria', 'servico', 'chamada_titulo', 'chamada_texto', 'corpo_html', 'faq', 'imagem_cena', 'imagem_alt', 'pontos_de_revisao'],
             'additionalProperties' => false,
         ];
 
@@ -804,7 +808,7 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
                 'max_tokens' => 16000,
                 'system' => $sistema,
                 'messages' => $mensagens,
-                'tools' => [['type' => 'web_search_20260209', 'name' => 'web_search', 'allowed_domains' => ['gov.br'], 'max_uses' => $cli ? 5 : 3]],
+                'tools' => [['type' => 'web_search_20260209', 'name' => 'web_search', 'allowed_domains' => ['gov.br', 'leg.br'], 'max_uses' => $cli ? 8 : 3]],
                 'output_config' => ['effort' => $cli ? 'high' : 'medium', 'format' => ['type' => 'json_schema', 'schema' => $esquema]],
             ], $id);
             nescon_pedido_registrar($id, sprintf('Claude terminou esta etapa em %d s', time() - $inicio));
@@ -840,6 +844,8 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
             'post_content' => nescon_artigo_conteudo(wp_kses_post($artigo['corpo_html']), $artigo['faq']),
         ]));
         update_post_meta($id, 'nescon_descricao', mb_substr(sanitize_text_field($artigo['descricao']), 0, 170));
+        update_post_meta($id, 'nescon_chamada_titulo', sanitize_text_field($artigo['chamada_titulo']));
+        update_post_meta($id, 'nescon_chamada_texto', sanitize_text_field($artigo['chamada_texto']));
         update_post_meta($id, 'nescon_categoria', sanitize_text_field($artigo['categoria']));
         update_post_meta($id, 'nescon_servico', sanitize_key($artigo['servico']));
         update_post_meta($id, 'nescon_pedido_pontos', array_map('sanitize_text_field', $artigo['pontos_de_revisao']));
