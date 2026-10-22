@@ -19,11 +19,25 @@ if (!$static_root || !$candidate || !str_starts_with($candidate, $static_root) |
     status_header(404);
 }
 
+// Artigo escrito no WordPress: usa o HTML do próprio artigo, se existir, ou
+// o de um artigo modelo como molde (cabeçalho, rodapé e estilos).
+if (isset($nescon_artigo) && $static_root) {
+    $molde = nescon_artigo_estatico($nescon_artigo->post_name) ? basename($nescon_artigo->post_name) : NESCON_ARTIGO_MODELO;
+    $candidate = $static_root . '/blog/' . $molde . '.html';
+    status_header(200);
+}
+
 if (!$candidate || !is_file($candidate)) {
     wp_die('Página não encontrada.');
 }
 
 $html = file_get_contents($candidate);
+
+if (isset($nescon_artigo)) {
+    $html = nescon_artigo_render($html, $nescon_artigo, (string) $nescon_dynamic_content);
+} elseif ($relative_file === 'blog.html') {
+    $html = nescon_blog_com_artigos($html);
+}
 $asset_base = trailingslashit(get_template_directory_uri()) . 'static';
 
 $html = str_replace(
@@ -55,7 +69,7 @@ $html = preg_replace_callback(
 
 // Quando a página foi editada no Elementor ou no editor do WordPress,
 // troca somente o conteúdo central e preserva o cabeçalho e o rodapé do tema.
-if (isset($nescon_dynamic_content)) {
+if (isset($nescon_dynamic_content) && !isset($nescon_artigo)) {
     $conteudo = '<main id="conteudo" class="flex-1">' . $nescon_dynamic_content . '</main>';
     $html = preg_replace('/<main\b[^>]*id="conteudo"[^>]*>.*?<\/main>/is', $conteudo, $html, 1) ?? $html;
 }

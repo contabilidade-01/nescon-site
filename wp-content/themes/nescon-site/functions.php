@@ -6,6 +6,7 @@ if (!defined('ABSPATH')) {
 
 require_once get_template_directory() . '/inc/lead-capture.php';
 require_once get_template_directory() . '/inc/elementor-pilot-rollback.php';
+require_once get_template_directory() . '/inc/artigos.php';
 
 add_action('after_setup_theme', static function (): void {
     add_theme_support('post-thumbnails');
@@ -221,9 +222,16 @@ add_action('template_redirect', static function (): void {
         return;
     }
 
+    $conteudo = (string) file_get_contents($file);
+    if ($relative === 'sitemap-0.xml') {
+        $conteudo = nescon_sitemap_com_artigos($conteudo);
+    } elseif ($relative === 'llms.txt') {
+        $conteudo = nescon_llms_com_artigos($conteudo);
+    }
+
     status_header(200);
     header('Content-Type: ' . $content_type);
     header('X-Robots-Tag: noindex', true);
-    readfile($file);
+    echo $conteudo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     exit;
 }, 1);

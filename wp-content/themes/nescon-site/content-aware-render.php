@@ -24,6 +24,12 @@ if (have_posts()) {
     if ($elementor_preview || $elementor_ativo || $possui_conteudo) {
         $nescon_dynamic_content = $conteudo_wordpress;
     }
+
+    // Artigo do blog escrito no WordPress: o tema monta a página inteira no
+    // padrão dos artigos (inc/artigos.php), inclusive na prévia do rascunho.
+    if ($possui_conteudo && !$elementor_ativo && nescon_eh_artigo(get_post())) {
+        $nescon_artigo = get_post();
+    }
 }
 
 require __DIR__ . '/static-render.php';

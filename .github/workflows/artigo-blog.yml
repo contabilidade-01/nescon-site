@@ -1,5 +1,9 @@
-# Gera um rascunho de artigo para o blog com a API do Claude e abre uma
-# issue para revisão. Veja automation/blog/README.md.
+# Escreve artigos do blog com a API do Claude e os deixa como rascunho no
+# WordPress para revisão. Veja automation/blog/README.md.
+#
+# - Segundas e quintas: próximo tema de pautas.txt; abre uma issue de revisão.
+# - Issue "Pedir um artigo novo": escreve o artigo pedido e responde na issue.
+# - Comentário "Ajuste: ..." nessa issue: ajusta o mesmo rascunho.
 name: Artigo do blog
 
 on:
@@ -11,55 +15,134 @@ on:
       tema:
         description: "Tema do artigo (vazio = próximo da lista de pautas)"
         required: false
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: write
   issues: write
 
 concurrency:
-  group: artigo-blog
+  group: artigo-blog-${{ github.event.issue.number || 'pautas' }}
 
 jobs:
   gerar:
+    # Só pessoas com acesso ao repositório podem pedir artigos ou ajustes.
+    if: >-
+      github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' &&
+        contains(github.event.issue.labels.*.name, 'artigo') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
+        contains(github.event.issue.labels.*.name, 'artigo') &&
+        startsWith(github.event.comment.body, 'Ajuste') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: automation/blog
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ISSUE: ${{ github.event.issue.number }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Instalar dependências
         run: composer install --no-interaction --no-progress
 
-      - name: Gerar rascunho
+      - name: Entender o pedido
+        id: pedido
+        env:
+          EVENTO: ${{ github.event_name }}
+          TEMA_MANUAL: ${{ inputs.tema }}
+          CORPO_ISSUE: ${{ github.event.issue.body }}
+          COMENTARIO: ${{ github.event.comment.body }}
+        run: |
+          case "$EVENTO" in
+            issues)
+              # Campos do formulário: "### Tema do artigo" e "### Orientações (opcional)".
+              php -r '
+                $corpo = str_replace("\r", "", getenv("CORPO_ISSUE"));
+                preg_match("/### Tema do artigo\n+(.*?)(?=\n### |\z)/s", $corpo, $t);
+                preg_match("/### Orientações[^\n]*\n+(.*?)(?=\n### |\z)/s", $corpo, $o);
+                $orientacoes = trim($o[1] ?? "");
+                file_put_contents("tema.txt", trim($t[1] ?? $corpo));
+                file_put_contents("pedido.txt", $orientacoes === "_No response_" ? "" : $orientacoes);
+              '
+              echo "modo=novo" >> "$GITHUB_OUTPUT"
+              ;;
+            issue_comment)
+              id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$ISSUE/comments" --paginate \
+                --jq '.[].body | capture("nescon-artigo-id: (?<id>[0-9]+)").id' | tail -n 1)
+              if [ -z "$id" ]; then
+                gh issue comment "$ISSUE" --body "Não encontrei o rascunho desta issue para ajustar. Peça um artigo novo pelo formulário."
+                exit 1
+              fi
+              printf '%s' "$COMENTARIO" > pedido.txt
+              : > tema.txt
+              echo "modo=ajuste" >> "$GITHUB_OUTPUT"
+              echo "id=$id" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              printf '%s' "$TEMA_MANUAL" > tema.txt
+              : > pedido.txt
+              echo "modo=novo" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Escrever no WordPress
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           WP_URL: ${{ vars.WP_URL }}
           WP_USER: ${{ vars.WP_USER }}
           WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
-          TEMA: ${{ inputs.tema }}
-        run: php gerar-artigo.php --tema="$TEMA" --saida=resultado.json
-
-      - name: Abrir issue de revisão
-        env:
-          GH_TOKEN: ${{ github.token }}
+          MODO: ${{ steps.pedido.outputs.modo }}
+          ID: ${{ steps.pedido.outputs.id }}
         run: |
-          titulo=$(jq -r .titulo resultado.json)
+          if [ "$MODO" = "ajuste" ]; then
+            php gerar-artigo.php --ajustar="$ID" --pedido="$(cat pedido.txt)" --saida=resultado.json
+          else
+            php gerar-artigo.php --tema="$(cat tema.txt)" --pedido="$(cat pedido.txt)" --saida=resultado.json
+          fi
+
+      - name: Responder
+        env:
+          MODO: ${{ steps.pedido.outputs.modo }}
+        run: |
           {
-            echo "Rascunho criado no WordPress. Revise e publique quando estiver tudo certo."
+            if [ "$MODO" = "ajuste" ]; then
+              echo "Rascunho ajustado: **$(jq -r .titulo resultado.json)**"
+            else
+              echo "Rascunho pronto: **$(jq -r .titulo resultado.json)**"
+            fi
             echo
-            echo "- **Editar:** $(jq -r .editar resultado.json)"
-            echo "- **Resumo:** $(jq -r .resumo resultado.json)"
+            echo "- **Ver como vai ficar:** $(jq -r .previa resultado.json) (entre no WordPress antes)"
+            echo "- **Editar ou publicar:** $(jq -r .editar resultado.json)"
+            echo "- **Endereço depois de publicado:** $(jq -r .endereco resultado.json)"
+            echo "- **Resposta rápida:** $(jq -r .resumo resultado.json)"
             echo
-            echo "### Pontos para conferir antes de publicar"
+            echo "### Pontos para o contador conferir antes de publicar"
             jq -r '.pontos_de_revisao[] | "- [ ] " + .' resultado.json
             echo
-            echo "Depois de publicar, adicione o card do artigo na página /blog e feche esta issue."
+            echo "Para mudar algo, comente aqui começando com **Ajuste:**. Depois de publicar, o artigo entra sozinho no /blog e no sitemap; pode fechar esta issue."
+            echo
+            echo "<!-- nescon-artigo-id: $(jq -r .id resultado.json) -->"
           } > corpo.md
-          gh issue create --title "Revisar artigo: $titulo" --body-file corpo.md
+          if [ -n "$ISSUE" ]; then
+            gh issue comment "$ISSUE" --body-file corpo.md
+          else
+            gh label create artigo --color 15803d --description "Artigo do blog" --force
+            gh issue create --title "Revisar artigo: $(jq -r .titulo resultado.json)" --label artigo --body-file corpo.md
+          fi
+
+      - name: Avisar se deu errado
+        if: failure() && github.event.issue.number
+        run: gh issue comment "$ISSUE" --body "Não consegui concluir este pedido. Veja o motivo em ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Tirar o tema usado da lista de pautas
-        if: inputs.tema == ''
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.tema == '')
         run: |
           tema=$(jq -r '.tema // empty' resultado.json)
           [ -n "$tema" ] || exit 0
