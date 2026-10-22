@@ -67,6 +67,20 @@ artigos em `/blog/endereco-do-artigo`.
 - **Endereço (slug)**: curto, sem acentos, só letras minúsculas, números e
   hífens ("limite-faturamento-mei").
 
+## Imagem
+
+Cada artigo tem uma ilustração própria, no estilo das fotos do site: fotografia
+realista de escritório, com pessoas brasileiras diversas numa cena ligada ao
+tema (ex.: contadora e empresário avaliando numa balança o custo do serviço).
+
+- **Cena da imagem**: 1 ou 2 frases com quem aparece (gênero, cor da pele,
+  papel: contador(a), empresário(a), cliente), o que estão fazendo e um objeto
+  que remeta ao tema (documentos, gráfico, calculadora, maquininha, notebook).
+  Sem texto, telas legíveis ou marcas.
+- **Texto alternativo**: descreve objetivamente a cena, no formato dos
+  artigos atuais ("Empresário branco e contadora negra avaliam em uma balança o
+  custo e os serviços de contabilidade").
+
 ## Exatidão
 
 - Valores, alíquotas, limites, prazos e regras legais só entram se
