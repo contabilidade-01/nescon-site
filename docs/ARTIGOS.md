@@ -31,5 +31,10 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 
 Para mudar o padrão dos artigos, edite o `guia-de-estilo.md` do tema.
 
-A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Se um
-pedido passar de 10 minutos parado, a tela mostra **Tentar de novo**.
+A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Em
+**Acompanhar**, cada pedido mostra ao vivo o que está acontecendo, com horário:
+fila, início da tarefa, buscas do Claude no gov.br, texto salvo, imagem da
+OpenAI e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
+novidade. Se o servidor encerrar a tarefa no meio, o pedido vira erro com o
+motivo. Se um pedido passar de 10 minutos parado, a tela mostra **Tentar de
+novo**.
