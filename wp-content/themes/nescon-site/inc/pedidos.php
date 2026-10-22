@@ -646,7 +646,8 @@ function nescon_claude(array $corpo, int $id): array
                 break;
             case 'content_block_stop':
                 if (isset($parcial[$i])) {
-                    $entrada = json_decode($parcial[$i] !== '' ? $parcial[$i] : '{}', true);
+                    // A entrada pode vir em partes (input_json_delta) ou inteira já no início do bloco.
+                    $entrada = $parcial[$i] !== '' ? json_decode($parcial[$i], true) : (array) ($blocos[$i]['input'] ?? []);
                     $blocos[$i]['input'] = $entrada ?: new stdClass();
                     if ('web_search' === ($blocos[$i]['name'] ?? '')) {
                         nescon_pedido_registrar($id, 'Pesquisando no gov.br: "' . ($entrada['query'] ?? '') . '"');
