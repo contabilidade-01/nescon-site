@@ -572,6 +572,7 @@ function nescon_artigo_conteudo(string $corpo, array $faq): string
 function nescon_artigos_existentes(int $ignorar): string
 {
     $titulos = [];
+    $rascunhos = [];
     foreach (glob(get_template_directory() . '/static/blog/*.html') ?: [] as $arquivo) {
         $slug = basename($arquivo, '.html');
         $titulos[$slug] = '- ' . nescon_artigo_exemplo($slug)['titulo'] . " (/blog/{$slug})";
@@ -579,13 +580,20 @@ function nescon_artigos_existentes(int $ignorar): string
     $blog = get_page_by_path('blog', OBJECT, 'page');
     if ($blog instanceof WP_Post) {
         foreach (get_pages(['parent' => $blog->ID, 'post_status' => 'publish,draft,pending']) ?: [] as $p) {
-            if ($p->ID !== $ignorar && $p->post_name !== '' && trim($p->post_content) !== '') {
-                $titulos[$p->post_name] ??= '- ' . $p->post_title . " (/blog/{$p->post_name})";
+            if ($p->ID === $ignorar || $p->post_name === '' || trim($p->post_content) === '' || isset($titulos[$p->post_name])) {
+                continue;
+            }
+            if ('publish' === $p->post_status) {
+                $titulos[$p->post_name] = '- ' . $p->post_title . " (/blog/{$p->post_name})";
+            } else {
+                $rascunhos[] = '- ' . $p->post_title;
             }
         }
     }
 
-    return implode("\n", $titulos);
+    // Rascunhos ainda não estão no ar: o Claude não repete o tema deles, mas não coloca link.
+    return implode("\n", $titulos)
+        . ($rascunhos ? "\n\nEm produção, ainda não publicados (não repita o tema e não coloque link para eles):\n" . implode("\n", $rascunhos) : '');
 }
 
 /**
@@ -763,7 +771,7 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
             $pedido = 'Tema do novo artigo: ' . get_post_meta($id, 'nescon_pedido_tema', true)
                 . ($orientacoes !== '' ? "\n\nOrientações de quem pediu o artigo:\n<orientacoes>\n{$orientacoes}\n</orientacoes>" : '')
                 . "\n\nData de hoje: " . wp_date('d/m/Y')
-                . "\n\nArtigos que já existem (não repita o tema; pode linkar para eles):\n" . nescon_artigos_existentes($id);
+                . "\n\nArtigos publicados (não repita o tema; pode linkar para eles):\n" . nescon_artigos_existentes($id);
         }
 
         $esquema = [
@@ -851,6 +859,10 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
         update_post_meta($id, 'nescon_pedido_pontos', array_map('sanitize_text_field', $artigo['pontos_de_revisao']));
         update_post_meta($id, 'nescon_imagem_cena', sanitize_text_field($artigo['imagem_cena']));
         update_post_meta($id, 'nescon_imagem_alt', sanitize_text_field($artigo['imagem_alt']));
+        // Imagem mantida num ajuste: o texto alternativo acompanha o texto novo.
+        if (has_post_thumbnail($id)) {
+            update_post_meta(get_post_thumbnail_id($id), '_wp_attachment_image_alt', sanitize_text_field($artigo['imagem_alt']));
+        }
         delete_post_meta($id, 'nescon_pedido_aviso');
         nescon_pedido_registrar($id, sprintf('Texto salvo no rascunho (%d palavras)', str_word_count(wp_strip_all_tags($artigo['corpo_html']), 0, 'ÁÉÍÓÚÂÊÔÃÕÇáéíóúâêôãõç')));
 
