@@ -19,6 +19,7 @@ COPY wp-content/themes/nescon/ /usr/src/wordpress/wp-content/themes/nescon/
 # de /var/www/html (que é um volume) para que sempre estejam disponíveis,
 # mesmo em um volume antigo já existente.
 COPY wp-content/elementor-templates/ /usr/local/share/nescon/elementor-templates/
+COPY docker/mu-plugins/ /usr/local/share/nescon/mu-plugins/
 COPY docker/import-template.php /usr/local/bin/nescon-import-template.php
 COPY docker/provision.sh /usr/local/bin/apache2-nescon-provision
 RUN chmod +x /usr/local/bin/apache2-nescon-provision
@@ -26,5 +27,5 @@ RUN chmod +x /usr/local/bin/apache2-nescon-provision
 # O entrypoint oficial prepara os arquivos e o wp-config.php somente quando
 # o comando começa com apache2 (ou é php-fpm). Preserve esse prefixo no
 # CMD para executar o provisionamento após essa preparação, finalizando
-# com o Apache. O entrypoint não aguarda a disponibilidade do banco.
+# com o Apache. O entrypoint não aguarda o banco; o provisionamento faz isso.
 CMD ["apache2-nescon-provision"]

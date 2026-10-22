@@ -61,6 +61,20 @@ Na aba **Environment** do serviço `wordpress`, cadastre:
 | `WORDPRESS_ADMIN_PASSWORD`   | *(senha forte — troque depois do primeiro login)* |
 | `WORDPRESS_ADMIN_EMAIL`      | *(seu e-mail)*                        |
 
+Para o WordPress enviar e-mails (recuperação de senha e formulário de
+contato), cadastre também o SMTP da sua caixa de e-mail. Sem `SMTP_HOST`,
+o WordPress usa o envio padrão do PHP, que costuma não chegar.
+
+| Variável         | Exemplo (Hostinger)                         |
+|------------------|---------------------------------------------|
+| `SMTP_HOST`      | `smtp.hostinger.com`                        |
+| `SMTP_PORT`      | `465`                                       |
+| `SMTP_SECURE`    | `ssl` (porta 465), `tls` (porta 587) ou `none` |
+| `SMTP_USER`      | `contato@nesconcontabilidade.com.br`        |
+| `SMTP_PASSWORD`  | *(senha da caixa de e-mail)*                |
+| `SMTP_FROM`      | *(opcional; padrão: `SMTP_USER`)*           |
+| `SMTP_FROM_NAME` | *(opcional; padrão: título do site)*        |
+
 Se estiver usando o `docker-compose.yml` como Compose service, o EasyPanel
 geralmente lê essas variáveis do arquivo `.env` do projeto ou de um campo
 "Environment Variables" na UI — cadastre lá, **nunca** commite senhas no
@@ -77,8 +91,10 @@ Na aba **Domains** do serviço `wordpress`:
 3. Ative **HTTPS** — o EasyPanel emite certificado Let's Encrypt
    automaticamente.
 4. Certifique-se de que `WORDPRESS_SITE_URL` (variável de ambiente) usa
-   exatamente essa URL com `https://` — é ela que o WordPress grava como
-   `siteurl`/`home` na instalação automática.
+   exatamente essa URL com `https://`. A cada deploy, o provisionamento
+   grava essa URL em `siteurl`/`home`; para trocar o domínio, basta mudar
+   a variável e reimplantar (uma troca feita só no wp-admin é desfeita no
+   próximo boot).
 
 ## 4. Deploy
 
@@ -90,6 +106,10 @@ Auto Deploy estiver ativo). O EasyPanel vai:
 3. Na primeira subida, `docker/provision.sh` instala o WordPress do zero
    e importa a página Planos — isso leva alguns segundos a mais que os
    deploys seguintes.
+4. O provisionamento espera o banco ficar disponível (até cerca de um
+   minuto). Se o banco não responder ou algum passo falhar, o erro aparece
+   no log com o prefixo `[nescon] Erro:` e o Apache sobe assim mesmo; o
+   provisionamento roda de novo no próximo deploy ou reinício.
 
 Acompanhe os logs do serviço na própria UI do EasyPanel (aba **Logs**)
 para confirmar as mensagens `[nescon] ...` do script de provisionamento.
@@ -109,8 +129,8 @@ publicada e definida como página inicial.
 > Se você **ainda não tem domínio apontado**, pode acessar temporariamente
 > pelo IP da VPS + porta que o EasyPanel expôs para o serviço (visível na
 > aba do serviço, em **Access** ou **Ports**), mas o ideal é configurar o
-> domínio antes do primeiro deploy — trocar `WORDPRESS_SITE_URL` depois
-> exige atualizar as opções `siteurl`/`home` do WordPress manualmente.
+> domínio antes do primeiro deploy. Quando o domínio estiver pronto,
+> atualize `WORDPRESS_SITE_URL` e reimplante.
 
 ## 6. Elementor Pro
 
