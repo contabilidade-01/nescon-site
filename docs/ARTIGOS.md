@@ -32,4 +32,4 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 Para mudar o padrão dos artigos, edite o `guia-de-estilo.md` do tema.
 
 A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Se um
-pedido passar de 15 minutos parado, a tela mostra **Tentar de novo**.
+pedido passar de 10 minutos parado, a tela mostra **Tentar de novo**.
