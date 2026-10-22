@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 require_once get_template_directory() . '/inc/lead-capture.php';
 require_once get_template_directory() . '/inc/elementor-pilot-rollback.php';
 require_once get_template_directory() . '/inc/artigos.php';
+require_once get_template_directory() . '/inc/pedidos.php';
 
 add_action('after_setup_theme', static function (): void {
     add_theme_support('post-thumbnails');

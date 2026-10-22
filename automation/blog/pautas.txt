@@ -1,8 +1,0 @@
-# Temas dos próximos artigos do blog, um por linha, na ordem em que devem sair.
-# A automação usa o primeiro tema da lista e o remove daqui depois de criar o rascunho.
-# Linhas começando com # são ignoradas. Com a lista vazia, o Claude escolhe o tema.
-Limite de faturamento do MEI e o que fazer ao ultrapassar
-Pró-labore: quanto o sócio deve retirar e quais impostos incidem
-Simples Nacional ou Lucro Presumido: como escolher o regime
-Como emitir nota fiscal de serviço em Guarulhos
-Contratar o primeiro funcionário: custos e obrigações da pequena empresa
