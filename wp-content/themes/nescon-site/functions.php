@@ -69,6 +69,17 @@ function nescon_site_install_blog_route_override(): void
 add_action('after_switch_theme', 'nescon_site_install_blog_route_override');
 add_action('admin_init', 'nescon_site_install_blog_route_override');
 
+/*
+ * Endereços sem barra no fim, como no sitemap, nos canonicals e nos links do
+ * site (/abrir-empresa). Com a barra, o WordPress redirecionava cada endereço
+ * do sitemap para /abrir-empresa/, e o Search Console marcava as páginas como
+ * "Página com redirecionamento". Agora a versão com barra é que redireciona
+ * (301) para a sem barra.
+ */
+add_filter('user_trailingslashit', static function (string $url, string $tipo): string {
+    return in_array($tipo, ['page', 'single'], true) ? untrailingslashit($url) : $url;
+}, 10, 2);
+
 add_action('init', static function (): void {
     remove_action('wp_head', 'rel_canonical');
     remove_action('wp_head', 'wp_shortlink_wp_head');
