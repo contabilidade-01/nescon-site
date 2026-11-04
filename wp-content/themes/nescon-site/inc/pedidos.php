@@ -173,7 +173,12 @@ function nescon_pedido_status_texto(WP_Post $p): string
         'fila' => 'Na fila, começa em instantes',
         'escrevendo' => 'O Claude está escrevendo (leva de 2 a 5 minutos)',
         'ilustrando' => 'Texto pronto. A OpenAI está criando a imagem (cerca de 1 minuto)',
-        'pronto' => 'publish' === $p->post_status ? 'Publicado' : ('pending' === $p->post_status ? 'Aguardando revisão do contador' : 'Rascunho pronto'),
+        'pronto' => match ($p->post_status) {
+            'publish' => 'Publicado',
+            'future' => 'Agendado para ' . wp_date('d/m/Y \à\s H:i', strtotime(get_gmt_from_date($p->post_date))),
+            'pending' => 'Aguardando revisão do contador',
+            default => 'Rascunho pronto',
+        },
         'erro' => 'Não deu certo: ' . get_post_meta($p->ID, 'nescon_pedido_erro', true),
         default => '',
     };
@@ -284,6 +289,7 @@ function nescon_pedido_agendar_imagem(int $id): void
 function nescon_tarefas_executar(): void
 {
     update_option('nescon_tarefas_visto', time(), false);
+    nescon_publicar_agendados();
     // Uma execução por vez: o cron roda a cada minuto e um artigo leva alguns.
     $trava = (int) get_option('nescon_tarefas_trava', 0);
     if ($trava && time() - $trava < 20 * MINUTE_IN_SECONDS) {
@@ -320,7 +326,7 @@ function nescon_tarefas_executar(): void
 function nescon_pedidos_tela(): void
 {
     $blog = get_page_by_path('blog', OBJECT, 'page');
-    $aviso = '';
+    $aviso = nescon_conteudos_acoes();
 
     if (isset($_POST['nescon_pedido']) && check_admin_referer('nescon_pedido') && $blog instanceof WP_Post) {
         $tema = sanitize_text_field(wp_unslash($_POST['tema'] ?? ''));
@@ -339,6 +345,12 @@ function nescon_pedidos_tela(): void
             ]);
             nescon_pedido_agendar((int) $id);
             $aviso = 'Pedido enviado. O artigo aparece abaixo em alguns minutos.';
+            $publicar_em = nescon_conteudo_ler_data(sanitize_text_field(wp_unslash($_POST['publicar_em'] ?? '')));
+            if ($id && $publicar_em && current_user_can('publish_pages')) {
+                update_post_meta((int) $id, 'nescon_publicar_em', $publicar_em);
+                nescon_pedido_registrar((int) $id, 'Publicação marcada para ' . wp_date('d/m/Y H:i', $publicar_em) . ', quando o texto ficar pronto');
+                $aviso .= ' Ele será publicado sozinho em ' . wp_date('d/m/Y \à\s H:i', $publicar_em) . '.';
+            }
         }
     }
 
@@ -375,7 +387,7 @@ function nescon_pedidos_tela(): void
 
     $pedidos = get_posts([
         'post_type' => 'page',
-        'post_status' => ['draft', 'pending', 'publish'],
+        'post_status' => ['draft', 'pending', 'future', 'publish'],
         'meta_key' => 'nescon_pedido_status',
         'numberposts' => 30,
         'orderby' => 'date',
@@ -383,7 +395,9 @@ function nescon_pedidos_tela(): void
     ]);
     $andamento = array_filter($pedidos, static fn (WP_Post $p): bool => in_array(get_post_meta($p->ID, 'nescon_pedido_status', true), ['fila', 'escrevendo', 'ilustrando'], true));
 
-    echo '<div class="wrap"><h1>Pedir artigo</h1>';
+    echo '<div class="wrap"><h1 class="wp-heading-inline">Pedir artigo</h1> ';
+    printf('<a class="page-title-action" href="%s">Ver conteúdos criados</a><hr class="wp-header-end">', esc_url(admin_url('admin.php?page=nescon-conteudos')));
+    nescon_conteudos_estilo();
     echo '<style>.nescon-registro{margin:.5em 0 0 1.5em;font-size:12px;color:#50575e}.nescon-registro li{margin:0}.nescon-registro time{font-variant-numeric:tabular-nums;color:#8c8f94}.nescon-registro .agora{color:#2271b1;font-style:italic}.nescon-ativo{margin:.3em 0 0;font-size:12px;color:#2271b1}.nescon-ativo.parado{color:#b32d2e}</style>';
     if ($andamento) {
         // Sem JavaScript, a tela ainda se atualiza sozinha a cada 20 segundos.
@@ -401,6 +415,12 @@ function nescon_pedidos_tela(): void
     wp_nonce_field('nescon_pedido');
     echo '<p><label for="tema"><strong>Tema do artigo</strong></label><br><input type="text" id="tema" name="tema" class="large-text" required placeholder="Ex.: Quanto o sócio deve retirar de pró-labore?"></p>';
     echo '<p><label for="orientacoes"><strong>Orientações</strong> (opcional)</label><br><textarea id="orientacoes" name="orientacoes" rows="3" class="large-text" placeholder="Ex.: falar do Fator R e dar um exemplo com números redondos."></textarea></p>';
+    if (current_user_can('publish_pages')) {
+        printf(
+            '<p><label for="publicar_em"><strong>Publicar automaticamente em</strong> (opcional)</label><br><input type="datetime-local" id="publicar_em" name="publicar_em" min="%s"><br><span class="description">Deixe em branco para revisar antes. Com data, o artigo é publicado sozinho nesse horário assim que ficar pronto, sem passar pela revisão.</span></p>',
+            esc_attr(wp_date('Y-m-d\TH:i')),
+        );
+    }
     submit_button('Pedir artigo', 'primary', 'nescon_pedido', false);
     echo '</form></div>';
 
@@ -416,7 +436,8 @@ function nescon_pedidos_tela(): void
         $status = (string) get_post_meta($p->ID, 'nescon_pedido_status', true);
         $parado = in_array($status, ['fila', 'escrevendo', 'ilustrando'], true) && time() - (int) get_post_meta($p->ID, 'nescon_pedido_inicio', true) > 10 * MINUTE_IN_SECONDS;
 
-        echo '<tr><td><strong>' . esc_html(get_the_title($p)) . '</strong><br><small>Pedido: ' . esc_html((string) get_post_meta($p->ID, 'nescon_pedido_tema', true)) . '</small></td>';
+        printf('<tr><td><strong><a href="%s">%s</a></strong>', esc_url(admin_url('admin.php?page=nescon-conteudos&artigo=' . $p->ID)), esc_html(get_the_title($p)));
+        echo '<br><small>Pedido: ' . esc_html((string) get_post_meta($p->ID, 'nescon_pedido_tema', true)) . '</small></td>';
         echo '<td>' . esc_html($parado ? 'Demorou mais que o normal' : nescon_pedido_status_texto($p));
         $aviso_pedido = (string) get_post_meta($p->ID, 'nescon_pedido_aviso', true);
         if ('pronto' === $status && $aviso_pedido !== '') {
@@ -478,9 +499,11 @@ function nescon_pedidos_tela(): void
                 }
             }
         }
+        echo nescon_conteudo_controles($p, nescon_conteudo_situacao($p));
         echo '</td></tr>';
     }
-    echo '</tbody></table></div>';
+    echo '</tbody></table>';
+    printf('<p><a href="%s">Ver todos os conteúdos criados, com filtros e leitura completa</a></p></div>', esc_url(admin_url('admin.php?page=nescon-conteudos')));
 }
 
 /** Atualiza o andamento dos pedidos em produção e recarrega a tela quando um termina. */

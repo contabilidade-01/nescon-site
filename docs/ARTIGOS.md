@@ -32,6 +32,19 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 - **Pedir ajuste**: na mesma lista, escreva o que mudar no rascunho.
 - **Gerar outra imagem**: na mesma lista, opcionalmente descrevendo a cena.
   A imagem fica como "Imagem destacada", com texto alternativo.
+- **Conteúdos criados** (submenu de Pedir artigo): painel com tudo o que o
+  gerador já produziu. Mostra quantos artigos há em produção, em rascunho,
+  aguardando revisão, agendados, publicados e com erro, com filtro por
+  situação e categoria e busca por título ou tema. **Ler** abre o artigo
+  inteiro dentro do wp-admin, com imagem, resposta rápida, prévia no Google,
+  pontos para conferir e o histórico do pedido.
+- **Agendar publicação** (quem pode publicar): no pedido, preencha
+  "Publicar automaticamente em" para o artigo ser publicado sozinho nesse
+  horário assim que ficar pronto, sem passar pela revisão. Num rascunho pronto,
+  use **Agendar publicação** na lista; **Cancelar agendamento** volta para
+  rascunho. O cron do servidor publica os agendados na hora certa.
+- **Excluir**: manda o pedido e o artigo para a lixeira de Páginas, de onde dá
+  para recuperar por 30 dias. Um artigo publicado sai do site.
 - **Publicar** (contador): abra **Editar**, confira a caixa
   "Conferir antes de publicar" e clique em **Publicar**. O tema monta a página
   no visual do site e inclui o artigo no `/blog`, no sitemap e no `llms.txt`.
