@@ -32,6 +32,12 @@ Tudo acontece no wp-admin do site, no tema `nescon-site` (1.6.0 ou mais novo).
 - **Pedir ajuste**: na mesma lista, escreva o que mudar no rascunho.
 - **Gerar outra imagem**: na mesma lista, opcionalmente descrevendo a cena.
   A imagem fica como "Imagem destacada", com texto alternativo.
+- **Gerador de imagens** (Configurações > Claude (artigos)): por padrão o
+  Claude desenha a ilustração, em estilo vetorial nas cores do site, com a
+  mesma chave dos artigos. A API do Claude não gera fotos: ele escreve um SVG,
+  que vira WebP quando o servidor tem Imagick com librsvg (senão fica em SVG, e
+  o compartilhamento em redes sociais usa a foto do serviço). A OpenAI (foto
+  realista) continua como opção, mas precisa de créditos lá.
 - **Conteúdos criados** (submenu de Pedir artigo): painel com tudo o que o
   gerador já produziu. Mostra quantos artigos há em produção, em rascunho,
   aguardando revisão, agendados, publicados e com erro, com filtro por
@@ -54,7 +60,7 @@ Para mudar o padrão dos artigos, edite o `guia-de-estilo.md` do tema.
 A geração roda em segundo plano pelo agendador do WordPress (WP-Cron). Em
 **Acompanhar**, cada pedido mostra ao vivo o que está acontecendo, com horário:
 fila, início da tarefa, cada pesquisa do Claude em sites oficiais e as páginas
-encontradas, quantas palavras já foram escritas, texto salvo, imagem da OpenAI
+encontradas, quantas palavras já foram escritas, texto salvo, imagem (Claude ou OpenAI)
 e erros. "Última atividade há…" fica vermelho depois de 6 minutos sem
 novidade. Se o servidor encerrar a tarefa no meio, o pedido vira erro com o
 motivo. O texto e a imagem rodam em tarefas separadas, para cada uma caber no

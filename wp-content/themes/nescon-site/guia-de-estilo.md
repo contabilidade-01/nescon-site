@@ -100,9 +100,11 @@ o texto, sem link.
 
 ## Imagem
 
-Cada artigo tem uma ilustração própria, no estilo das fotos do site: fotografia
-realista de escritório, com pessoas brasileiras diversas numa cena ligada ao
-tema (ex.: contadora e empresário avaliando numa balança o custo do serviço).
+Cada artigo tem uma ilustração própria: uma cena de escritório ou comércio,
+com pessoas brasileiras diversas numa situação ligada ao tema (ex.: contadora e
+empresário avaliando numa balança o custo do serviço). Por padrão o Claude a
+desenha em estilo vetorial nas cores do site, então a cena deve ser simples de
+desenhar: poucas pessoas, uma ação clara e um ou dois objetos marcantes.
 
 - **Cena da imagem**: 1 ou 2 frases com quem aparece (gênero, cor da pele,
   papel: contador(a), empresário(a), cliente), o que estão fazendo e um objeto
