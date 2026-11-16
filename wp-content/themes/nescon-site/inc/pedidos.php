@@ -70,6 +70,21 @@ function nescon_claude_chave(): string
 }
 
 /**
+ * Quem cria a ilustração dos artigos: o Claude (padrão, ilustração vetorial
+ * nas cores do site) ou a OpenAI (foto realista, precisa de créditos lá).
+ */
+function nescon_imagem_motor(): string
+{
+    return 'openai' === get_option('nescon_imagem_motor', 'claude') ? 'openai' : 'claude';
+}
+
+/** Há chave cadastrada para o gerador de imagens escolhido. */
+function nescon_imagem_disponivel(): bool
+{
+    return ('openai' === nescon_imagem_motor() ? nescon_openai_chave() : nescon_claude_chave()) !== '';
+}
+
+/**
  * Confere se cada chave cadastrada conecta na respectiva API, sem gerar nada
  * (consulta só a lista de modelos, que não tem custo).
  */
@@ -77,8 +92,11 @@ function nescon_testar_chaves(): array
 {
     $testes = [
         'Claude' => [nescon_claude_chave(), 'https://api.anthropic.com/v1/models/' . NESCON_CLAUDE_MODELO, static fn (string $chave): array => ['x-api-key' => $chave, 'anthropic-version' => '2023-06-01']],
-        'OpenAI (imagens)' => [nescon_openai_chave(), 'https://api.openai.com/v1/models/gpt-image-1', static fn (string $chave): array => ['Authorization' => 'Bearer ' . $chave]],
     ];
+    // A OpenAI só é testada quando é ela que gera as imagens.
+    if ('openai' === nescon_imagem_motor()) {
+        $testes['OpenAI (imagens)'] = [nescon_openai_chave(), 'https://api.openai.com/v1/models/gpt-image-1', static fn (string $chave): array => ['Authorization' => 'Bearer ' . $chave]];
+    }
     $resultado = [];
     foreach ($testes as $nome => [$chave, $url, $cabecalhos]) {
         if ($chave === '') {
@@ -115,6 +133,7 @@ add_action('admin_menu', static function (): void {
                     update_option($campo, $chave, false);
                 }
             }
+            update_option('nescon_imagem_motor', 'openai' === ($_POST['nescon_imagem_motor'] ?? '') ? 'openai' : 'claude', false);
             echo '<div class="notice notice-success"><p>Chaves salvas.</p></div>';
         }
         // Ao salvar ou ao clicar em "Testar conexão", confere as duas chaves.
@@ -137,8 +156,16 @@ add_action('admin_menu', static function (): void {
             esc_attr($atual !== '' ? 'Configurada (termina em ' . substr($atual, -4) . '). Preencha só para trocar.' : 'sk-ant-...'),
         );
         printf(
-            '<p><label for="nescon_openai_chave">Chave da API da OpenAI (imagens)</label><br><input type="password" id="nescon_openai_chave" name="nescon_openai_chave" class="regular-text" autocomplete="off" placeholder="%s"><br><span class="description">Opcional. Com ela, cada artigo ganha uma ilustração nova no estilo do site. Crie em platform.openai.com, em <em>API keys</em>. Sem ela, o artigo usa a foto do serviço relacionado.</span></p>',
+            '<p><label for="nescon_openai_chave">Chave da API da OpenAI (imagens)</label><br><input type="password" id="nescon_openai_chave" name="nescon_openai_chave" class="regular-text" autocomplete="off" placeholder="%s"><br><span class="description">Opcional. Só é usada se o gerador de imagens abaixo for a OpenAI. Crie em platform.openai.com, em <em>API keys</em>.</span></p>',
             esc_attr($openai !== '' ? 'Configurada (termina em ' . substr($openai, -4) . '). Preencha só para trocar.' : 'sk-...'),
+        );
+        $motor = nescon_imagem_motor();
+        printf(
+            '<fieldset><legend><strong>Gerador de imagens dos artigos</strong></legend>'
+            . '<p><label><input type="radio" name="nescon_imagem_motor" value="claude"%s> Claude: ilustração vetorial nas cores do site, usando a mesma chave do Claude (recomendado)</label><br>'
+            . '<label><input type="radio" name="nescon_imagem_motor" value="openai"%s> OpenAI: foto realista, precisa da chave e de créditos na OpenAI</label></p></fieldset>',
+            checked($motor, 'claude', false),
+            checked($motor, 'openai', false),
         );
         echo '<p class="submit">';
         submit_button('Salvar chaves', 'primary', 'submit', false);
@@ -172,7 +199,7 @@ function nescon_pedido_status_texto(WP_Post $p): string
     return match ($status) {
         'fila' => 'Na fila, começa em instantes',
         'escrevendo' => 'O Claude está escrevendo (leva de 2 a 5 minutos)',
-        'ilustrando' => 'Texto pronto. A OpenAI está criando a imagem (cerca de 1 minuto)',
+        'ilustrando' => 'Texto pronto. ' . ('openai' === nescon_imagem_motor() ? 'A OpenAI' : 'O Claude') . ' está criando a imagem (cerca de 1 a 2 minutos)',
         'pronto' => match ($p->post_status) {
             'publish' => 'Publicado',
             'future' => 'Agendado para ' . wp_date('d/m/Y \à\s H:i', strtotime(get_gmt_from_date($p->post_date))),
@@ -375,7 +402,7 @@ function nescon_pedidos_tela(): void
     if (isset($_POST['nescon_nova_imagem']) && check_admin_referer('nescon_nova_imagem')) {
         $id = (int) ($_POST['id'] ?? 0);
         $cena = sanitize_textarea_field(wp_unslash($_POST['cena'] ?? ''));
-        if (current_user_can('edit_post', $id) && nescon_openai_chave() !== '') {
+        if (current_user_can('edit_post', $id) && nescon_imagem_disponivel()) {
             if ($cena !== '') {
                 update_post_meta($id, 'nescon_imagem_cena', $cena);
             }
@@ -469,7 +496,7 @@ function nescon_pedidos_tela(): void
                 printf('<input type="hidden" name="id" value="%d"><textarea name="ajuste" rows="2" class="large-text" placeholder="O que mudar? Ex.: deixar a resposta rápida mais curta"></textarea>', $p->ID);
                 submit_button('Pedir ajuste', 'secondary small', 'nescon_ajuste', false);
                 echo '</form>';
-                if (nescon_openai_chave() !== '') {
+                if (nescon_imagem_disponivel()) {
                     echo '<details style="margin-top:.5em"><summary>Gerar outra imagem</summary><form method="post">';
                     wp_nonce_field('nescon_nova_imagem');
                     printf(
@@ -490,7 +517,7 @@ function nescon_pedidos_tela(): void
             // Texto já escrito: dá para ver o rascunho e gerar só a imagem, sem reescrever.
             if (trim($p->post_content) !== '') {
                 printf('<p><a class="button" href="%s">Editar o texto</a></p>', esc_url(get_edit_post_link($p->ID, 'url')));
-                if (nescon_openai_chave() !== '') {
+                if (nescon_imagem_disponivel()) {
                     echo '<form method="post">';
                     wp_nonce_field('nescon_nova_imagem');
                     printf('<input type="hidden" name="id" value="%d">', $p->ID);
@@ -890,13 +917,13 @@ function nescon_escrever_artigo(int $id, string $ajuste = ''): void
         nescon_pedido_registrar($id, sprintf('Texto salvo no rascunho (%d palavras)', str_word_count(wp_strip_all_tags($artigo['corpo_html']), 0, 'ÁÉÍÓÚÂÊÔÃÕÇáéíóúâêôãõç')));
 
         // Ilustração nova só quando o artigo ainda não tem imagem (ou foi pedida outra).
-        if (nescon_openai_chave() !== '' && (!has_post_thumbnail($id) || get_post_meta($id, 'nescon_nova_imagem', true))) {
+        if (nescon_imagem_disponivel() && (!has_post_thumbnail($id) || get_post_meta($id, 'nescon_nova_imagem', true))) {
             delete_post_meta($id, 'nescon_nova_imagem');
             nescon_pedido_agendar_imagem($id);
 
             return;
         }
-        nescon_pedido_registrar($id, nescon_openai_chave() === '' ? 'Sem chave da OpenAI: o artigo usa a foto do serviço' : 'O artigo já tem imagem: mantida');
+        nescon_pedido_registrar($id, nescon_imagem_disponivel() ? 'O artigo já tem imagem: mantida' : 'Sem chave para gerar imagem: o artigo usa a foto do serviço');
         update_post_meta($id, 'nescon_pedido_status', 'pronto');
         nescon_pedido_registrar($id, 'Pronto');
     } catch (Throwable $e) {
@@ -969,19 +996,57 @@ function nescon_ilustrar_artigo(int $id): void
 }
 
 /**
- * Cria a ilustração do artigo com a API de imagens da OpenAI, no estilo das
- * fotos do site, e a define como imagem destacada (com texto alternativo).
+ * Cria a ilustração do artigo com o gerador escolhido em Configurações >
+ * Claude (artigos) e a define como imagem destacada (com texto alternativo).
  */
 function nescon_gerar_imagem(int $id): void
 {
     $cena = (string) get_post_meta($id, 'nescon_imagem_cena', true);
     $alt = (string) get_post_meta($id, 'nescon_imagem_alt', true);
+    $inicio = time();
+    [$imagem, $extensao, $tipo] = 'openai' === nescon_imagem_motor()
+        ? nescon_imagem_openai($id, $cena)
+        : nescon_imagem_claude($id, $cena, get_the_title($id));
+    nescon_pedido_registrar($id, sprintf('Ilustração pronta em %d s', time() - $inicio));
+
+    require_once ABSPATH . 'wp-admin/includes/image.php';
+    $nome = (get_post_field('post_name', $id) ?: 'artigo-' . $id) . '.' . $extensao;
+    // O WordPress não aceita SVG por padrão: libera só para gravar esta ilustração.
+    $liberar_svg = static fn (array $tipos): array => $tipos + ['svg' => 'image/svg+xml'];
+    add_filter('upload_mimes', $liberar_svg);
+    $arquivo = wp_upload_bits($nome, null, $imagem);
+    remove_filter('upload_mimes', $liberar_svg);
+    if (!empty($arquivo['error'])) {
+        throw new RuntimeException($arquivo['error']);
+    }
+    $anexo = wp_insert_attachment([
+        'post_mime_type' => $tipo,
+        'post_title' => get_the_title($id),
+        'post_status' => 'inherit',
+    ], $arquivo['file'], $id);
+    $dados = wp_generate_attachment_metadata($anexo, $arquivo['file']);
+    if ('image/svg+xml' === $tipo) {
+        // SVG não gera miniaturas: só registra o tamanho para o tema montar o <img>.
+        $dados = ['width' => 1536, 'height' => 1024, 'file' => _wp_relative_upload_path($arquivo['file']), 'sizes' => []];
+    }
+    wp_update_attachment_metadata($anexo, $dados);
+    update_post_meta($anexo, '_wp_attachment_image_alt', $alt);
+
+    $anterior = get_post_thumbnail_id($id);
+    set_post_thumbnail($id, $anexo);
+    if ($anterior && (int) get_post_field('post_parent', $anterior) === $id) {
+        wp_delete_attachment($anterior, true);
+    }
+}
+
+/** Foto realista pela API de imagens da OpenAI (precisa de créditos lá). */
+function nescon_imagem_openai(int $id, string $cena): array
+{
     $prompt = 'Fotografia realista, estilo editorial corporativo, luz natural suave, cores sóbrias com toques de azul-marinho e verde, '
         . 'escritório de contabilidade moderno e acolhedor no Brasil, pessoas brasileiras reais e diversas, expressões naturais, profundidade de campo rasa. '
         . 'Cena: ' . $cena . ' Sem texto, letras, números legíveis, logotipos ou marcas d\'água.';
     nescon_pedido_registrar($id, 'Pedindo a ilustração à OpenAI (cerca de 1 minuto)');
     nescon_pedido_agora($id, 'OpenAI desenhando a ilustração');
-    $inicio = time();
 
     $resposta = wp_remote_post('https://api.openai.com/v1/images/generations', [
         'timeout' => 180,
@@ -1003,26 +1068,149 @@ function nescon_gerar_imagem(int $id): void
     if (200 !== wp_remote_retrieve_response_code($resposta) || !$imagem) {
         throw new RuntimeException($dados['error']['message'] ?? 'HTTP ' . wp_remote_retrieve_response_code($resposta));
     }
-    nescon_pedido_registrar($id, sprintf('OpenAI entregou a imagem em %d s', time() - $inicio));
 
-    require_once ABSPATH . 'wp-admin/includes/image.php';
-    $nome = (get_post_field('post_name', $id) ?: 'artigo-' . $id) . '.webp';
-    $arquivo = wp_upload_bits($nome, null, $imagem);
-    if (!empty($arquivo['error'])) {
-        throw new RuntimeException($arquivo['error']);
+    return [$imagem, 'webp', 'image/webp'];
+}
+
+/**
+ * Ilustração vetorial desenhada pelo Claude. A API do Claude não gera fotos:
+ * ele escreve o SVG da cena, nas cores do site. Quando o servidor tem o
+ * Imagick com suporte a SVG, a ilustração vira WebP (melhor para redes
+ * sociais); senão, fica em SVG, que os navegadores mostram normalmente.
+ */
+function nescon_imagem_claude(int $id, string $cena, string $titulo): array
+{
+    if (nescon_claude_chave() === '') {
+        throw new RuntimeException('a chave da API do Claude não está cadastrada');
     }
-    $anexo = wp_insert_attachment([
-        'post_mime_type' => 'image/webp',
-        'post_title' => get_the_title($id),
-        'post_status' => 'inherit',
-    ], $arquivo['file'], $id);
-    wp_update_attachment_metadata($anexo, wp_generate_attachment_metadata($anexo, $arquivo['file']));
-    update_post_meta($anexo, '_wp_attachment_image_alt', $alt);
+    nescon_pedido_registrar($id, 'Pedindo a ilustração ao Claude (cerca de 1 a 2 minutos)');
+    nescon_pedido_agora($id, 'Claude desenhando a ilustração');
 
-    $anterior = get_post_thumbnail_id($id);
-    set_post_thumbnail($id, $anexo);
-    if ($anterior && (int) get_post_field('post_parent', $anterior) === $id) {
-        wp_delete_attachment($anterior, true);
+    $sistema = 'Você é ilustrador do blog da Nescon Contabilidade (Guarulhos, SP) e desenha em SVG. '
+        . 'Estilo: ilustração editorial plana (flat), moderna e limpa, com formas geométricas simples, poucos detalhes, sombras suaves em blocos de cor e bastante respiro. '
+        . 'Paleta do site: azul-marinho #0b1c38, #10284e, #163566, #1d4480; azul claro #e1e8f3 e #f2f5fa; verde #16a34a, #15803d e #166534; areia #faf8f4; branco; '
+        . 'tons de pele brasileiros variados e cabelos em tons naturais. '
+        . 'Pessoas estilizadas, sem rosto detalhado (no máximo olhos e boca simples), proporções agradáveis, em ambiente de escritório ou comércio. '
+        . 'Regras técnicas: responda só com o SVG, começando em <svg e terminando em </svg>, sem comentários nem texto fora dele. '
+        . 'Use viewBox="0 0 1536 1024" width="1536" height="1024" e preencha todo o fundo. '
+        . 'Só elementos básicos (rect, circle, ellipse, path, polygon, polyline, line, g, linearGradient, radialGradient, defs, clipPath). '
+        . 'Nada de texto, letras, números, logotipos, imagens externas, fontes, filtros, scripts ou animações. Telas e papéis mostram só barras e linhas abstratas.';
+    $pedido = "Desenhe a ilustração de capa do artigo \"{$titulo}\".\n\nCena: {$cena}";
+
+    $resposta = wp_remote_post(defined('NESCON_CLAUDE_URL') ? NESCON_CLAUDE_URL : 'https://api.anthropic.com/v1/messages', [
+        'timeout' => 300,
+        'headers' => [
+            'x-api-key' => nescon_claude_chave(),
+            'anthropic-version' => '2023-06-01',
+            'content-type' => 'application/json',
+        ],
+        'body' => wp_json_encode([
+            'model' => NESCON_CLAUDE_MODELO,
+            'max_tokens' => 20000,
+            'thinking' => ['type' => 'adaptive'],
+            // Pelo site (sem o cron do servidor) a hospedagem corta em cerca de 2 minutos: pensa menos.
+            'output_config' => ['effort' => 'cli' === PHP_SAPI ? 'medium' : 'low'],
+            'system' => $sistema,
+            'messages' => [['role' => 'user', 'content' => $pedido]],
+        ]),
+    ]);
+    if (is_wp_error($resposta)) {
+        throw new RuntimeException('falha de conexão com o Claude (' . $resposta->get_error_message() . ')');
+    }
+    $dados = json_decode((string) wp_remote_retrieve_body($resposta), true);
+    if (200 !== wp_remote_retrieve_response_code($resposta)) {
+        throw new RuntimeException('o Claude recusou o pedido (' . ($dados['error']['message'] ?? 'HTTP ' . wp_remote_retrieve_response_code($resposta)) . ')');
+    }
+    if ('end_turn' !== ($dados['stop_reason'] ?? '')) {
+        throw new RuntimeException('o Claude não terminou a ilustração (' . ($dados['stop_reason'] ?? 'sem motivo') . ')');
+    }
+    $texto = '';
+    foreach ((array) ($dados['content'] ?? []) as $bloco) {
+        if ('text' === ($bloco['type'] ?? '')) {
+            $texto .= $bloco['text'];
+        }
+    }
+    $svg = nescon_svg_limpo($texto);
+
+    $webp = nescon_svg_para_webp($svg);
+    if ($webp !== null) {
+        nescon_pedido_registrar($id, 'Ilustração convertida para WebP');
+
+        return [$webp, 'webp', 'image/webp'];
+    }
+
+    return [$svg, 'svg', 'image/svg+xml'];
+}
+
+/**
+ * Tira do SVG do Claude tudo o que não é desenho (scripts, eventos, links
+ * externos, objetos embutidos), para o arquivo ser seguro de servir no site.
+ */
+function nescon_svg_limpo(string $texto): string
+{
+    if (!preg_match('~<svg\b.*</svg>~is', $texto, $m)) {
+        throw new RuntimeException('o Claude não devolveu uma ilustração em SVG');
+    }
+    $doc = new DOMDocument();
+    $anterior = libxml_use_internal_errors(true);
+    $ok = $doc->loadXML($m[0], LIBXML_NONET);
+    libxml_clear_errors();
+    libxml_use_internal_errors($anterior);
+    if (!$ok || !$doc->documentElement || 'svg' !== strtolower($doc->documentElement->localName)) {
+        throw new RuntimeException('a ilustração do Claude veio com SVG inválido');
+    }
+    $permitidos = ['svg', 'g', 'defs', 'rect', 'circle', 'ellipse', 'path', 'polygon', 'polyline', 'line', 'lineargradient', 'radialgradient', 'stop', 'clippath', 'mask', 'use', 'title', 'desc', 'pattern', 'symbol'];
+    $xpath = new DOMXPath($doc);
+    foreach (iterator_to_array($xpath->query('//*')) as $no) {
+        if (!in_array(strtolower($no->localName), $permitidos, true)) {
+            $no->parentNode?->removeChild($no);
+            continue;
+        }
+        foreach (iterator_to_array($no->attributes) as $atributo) {
+            $nome = strtolower($atributo->localName);
+            $valor = trim($atributo->value);
+            $link = in_array($nome, ['href', 'src'], true) && !str_starts_with($valor, '#');
+            $url = preg_match('~url\(\s*[\'"]?\s*(?!#)~i', $valor);
+            if (str_starts_with($nome, 'on') || $link || $url || 'style' === $nome && preg_match('~expression|javascript|@import~i', $valor)) {
+                $no->removeAttributeNode($atributo);
+            }
+        }
+    }
+    $raiz = $doc->documentElement;
+    $raiz->setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    if (!$raiz->hasAttribute('viewBox')) {
+        $raiz->setAttribute('viewBox', '0 0 1536 1024');
+    }
+    $raiz->setAttribute('width', '1536');
+    $raiz->setAttribute('height', '1024');
+
+    return (string) $doc->saveXML($raiz);
+}
+
+/** Converte o SVG em WebP com o Imagick, se o servidor souber ler SVG (librsvg). */
+function nescon_svg_para_webp(string $svg): ?string
+{
+    if (!class_exists('Imagick')) {
+        return null;
+    }
+    try {
+        $formatos = array_map('strtoupper', Imagick::queryFormats());
+        // Sem o librsvg, o leitor de SVG embutido do ImageMagick desenha mal gradientes e curvas.
+        if (!in_array('RSVG', $formatos, true) || !in_array('WEBP', $formatos, true)) {
+            return null;
+        }
+        $imagem = new Imagick();
+        $imagem->setBackgroundColor(new ImagickPixel('#faf8f4'));
+        $imagem->readImageBlob($svg);
+        $imagem->resizeImage(1536, 1024, Imagick::FILTER_LANCZOS, 1);
+        $imagem->setImageFormat('webp');
+        $imagem->setImageCompressionQuality(88);
+        $webp = $imagem->getImageBlob();
+        $imagem->clear();
+
+        return $webp !== '' ? $webp : null;
+    } catch (Throwable) {
+        return null;
     }
 }
 

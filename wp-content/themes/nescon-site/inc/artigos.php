@@ -132,28 +132,31 @@ function nescon_artigo_descricao(WP_Post $post): string
 /** Imagem do artigo: a imagem destacada ou a imagem do serviço relacionado. */
 function nescon_artigo_imagem(WP_Post $post): array
 {
-    $id = get_post_thumbnail_id($post);
-    if ($id) {
-        $alt = (string) get_post_meta($id, '_wp_attachment_image_alt', true);
-
-        return [
-            'src' => (string) wp_get_attachment_image_url($id, 'large'),
-            'srcset' => (string) wp_get_attachment_image_srcset($id, 'large'),
-            'og' => (string) wp_get_attachment_image_url($id, 'full'),
-            'alt' => $alt !== '' ? $alt : $post->post_title,
-        ];
-    }
-
     $servico = nescon_artigo_servicos()[get_post_meta($post->ID, 'nescon_servico', true)] ?? null;
     $nome = $servico['imagem'] ?? 'conteudos-contabilidade';
     // Caminhos relativos, como nos HTML estáticos: o static-render.php aponta
     // /img/ para a pasta do tema.
     $base = '/img/site/' . $nome;
+    $og_servico = trailingslashit(get_template_directory_uri()) . 'static' . $base . '.webp';
+
+    $id = get_post_thumbnail_id($post);
+    if ($id) {
+        $alt = (string) get_post_meta($id, '_wp_attachment_image_alt', true);
+        $full = (string) wp_get_attachment_image_url($id, 'full');
+
+        return [
+            'src' => (string) wp_get_attachment_image_url($id, 'large'),
+            'srcset' => (string) wp_get_attachment_image_srcset($id, 'large'),
+            // Redes sociais não mostram SVG: no compartilhamento vai a foto do serviço.
+            'og' => 'image/svg+xml' === get_post_mime_type($id) ? $og_servico : $full,
+            'alt' => $alt !== '' ? $alt : $post->post_title,
+        ];
+    }
 
     return [
         'src' => $base . '-1200.webp',
         'srcset' => "{$base}-640.webp 640w, {$base}-1200.webp 1200w, {$base}.webp 1500w",
-        'og' => trailingslashit(get_template_directory_uri()) . 'static' . $base . '.webp',
+        'og' => $og_servico,
         'alt' => 'Contador da Nescon atende cliente: ' . $post->post_title,
     ];
 }
